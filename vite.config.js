@@ -3,6 +3,6 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/covoit-may/',
   plugins: [vue()],
+  base: '/covoit-may'
 })
