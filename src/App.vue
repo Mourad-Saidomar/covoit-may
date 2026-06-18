@@ -1,7 +1,7 @@
 <script setup>
-import Header from './components/header.vue'
-import Hero from './components/hero.vue'
-import Footer from './components/footer.vue'
+import Header from './views/header.vue'
+import Hero from './views/hero.vue'
+import Footer from './views/footer.vue'
 </script>
 
 <template>

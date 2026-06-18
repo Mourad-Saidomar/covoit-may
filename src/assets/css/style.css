@@ -29,8 +29,9 @@
 }
 
 .hero-car-scene {
-  transform: translate(8vw, -5vh) scaleX(-1);
-  clip-path: inset(0 0 18vh 0);
+  transform: translate(0vw, 0vh) scaleX(1);
+  clip-path: inset(0 0 0 0);
+  min-height: clamp(18rem, 42vw, 38rem);
 }
 
 .hero-car-track::before,
@@ -56,7 +57,7 @@
   --light: #fbfbfb ;
   --n-road: -4em;
   --p-road: 7em;
-  font-size: clamp(10px, 1.4vw, 16px);
+  font-size: clamp(8px, 1.4vw, 16px);
 }
 
 .hero-car-scene *,

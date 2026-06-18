@@ -1,7 +1,7 @@
 import {createRouter, createWebHashHistory } from 'vue-router'
-import HeroView from '../views/hero.vue/index.js'
-import HeaderView from '../views/header.vue/index.js'
-import FooterView from '../views/footer.vue/index.js'
+import HeroView from '../views/hero.vue'
+import HeaderView from '../views/header.vue'
+import FooterView from '../views/footer.vue'
 
 
 const routes = [
@@ -30,6 +30,7 @@ const routes = [
 
 const router = createRouter({
     history: createWebHashHistory(),
+    base: import.meta.env.BASE_URL,
     routes
 })
 
