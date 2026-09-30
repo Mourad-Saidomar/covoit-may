@@ -1,0 +1,1207 @@
+/* ============================================
+   Covoit'May — Thème personnalisé
+   Identité : lagon de Mayotte (turquoise) + ylang (jaune doré)
+   ============================================ */
+
+:root {
+  --cm-primary: #2d6c58;
+  --cm-primary-dark: #1f4d3e;
+  --cm-primary-light: #e8f2e9;
+  --cm-accent: #f57b57;
+  --cm-accent-dark: #df563b;
+  --cm-gold: #f6c764;
+  --cm-dark: #244238;
+  --cm-gray-bg: #fffdf5;
+  --cm-danger: #c94b3a;
+}
+
+body {
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: var(--cm-gray-bg);
+  color: #2d4038;
+}
+
+/* ---------- Boutons ---------- */
+.btn {
+  border-radius: 999px;
+}
+.btn-cm-primary {
+  background-color: var(--cm-primary);
+  border-color: var(--cm-primary);
+  color: #fff;
+}
+.btn-cm-primary:hover,
+.btn-cm-primary:focus {
+  background-color: var(--cm-primary-dark);
+  border-color: var(--cm-primary-dark);
+  color: #fff;
+}
+.btn-cm-accent {
+  background-color: var(--cm-accent);
+  border-color: var(--cm-accent);
+  color: var(--cm-dark);
+  font-weight: 600;
+}
+.btn-cm-accent:hover,
+.btn-cm-accent:focus {
+  background-color: var(--cm-accent-dark);
+  border-color: var(--cm-accent-dark);
+  color: var(--cm-dark);
+}
+.btn-outline-cm {
+  border-color: var(--cm-primary);
+  color: var(--cm-primary);
+}
+.btn-outline-cm:hover {
+  background-color: var(--cm-primary);
+  color: #fff;
+}
+
+/* ---------- Texte / fonds ---------- */
+.text-cm-primary {
+  color: var(--cm-primary) !important;
+}
+.text-cm-accent {
+  color: var(--cm-accent) !important;
+}
+.bg-cm-primary {
+  background-color: var(--cm-primary) !important;
+}
+.bg-cm-dark {
+  background-color: var(--cm-dark) !important;
+}
+.bg-cm-light {
+  background-color: var(--cm-primary-light) !important;
+}
+
+/* ---------- Hero ----------
+   Le hero reprend l'idée du logo : l'île traversée par une route.
+   À gauche le titre et la recherche, à droite la carte de Mayotte
+   (composant HeroCarte) ; sur mobile, la carte passe dessous.
+   Couleurs : la mer en vert clair, l'île en vert, la route en crème
+   et jaune comme sur le logo. Le corail est réservé aux repères. */
+.hero-section {
+  background-color: var(--cm-primary-light);
+  padding-top: 2.5rem;
+}
+/* Titre en Recursive (index.html). L'axe "CASL" à 1 donne son style
+   « pinceau », proche des enseignes peintes à la main. */
+.hero-titre {
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 1;
+  font-weight: 800;
+  font-size: 2.25rem;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: var(--cm-primary-dark);
+  margin-bottom: 1.25rem;
+}
+.hero-texte {
+  max-width: 32em;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  margin-bottom: 2rem;
+}
+.hero-inscription {
+  margin: 1.25rem 0 0;
+}
+/* Le rivage en bas du hero (SVG étiré sur toute la largeur) */
+.hero-rivage {
+  display: block;
+  width: 100%;
+  height: clamp(48px, 7vw, 104px);
+  margin-top: 1.5rem;
+  /* Le sable dépasse un peu sous le dessin (overflow visible) pour
+     recouvrir la jointure : pas de fine ligne verte à cet endroit */
+  overflow: visible;
+  margin-bottom: -1px;
+}
+.hero-rivage-recif {
+  fill: #b9dccf;
+}
+.hero-rivage-lagon {
+  fill: #d3ebe2;
+}
+.hero-rivage-sable {
+  fill: var(--cm-gray-bg);
+}
+/* Le bouton de recherche est vert : sur l'accueil, le corail est
+   gardé pour l'épingle et le rond de la carte. */
+.hero-section .search-form-submit .btn {
+  background-color: var(--cm-primary);
+  border-color: var(--cm-primary);
+  color: #fff;
+}
+.hero-section .search-form-submit .btn:hover,
+.hero-section .search-form-submit .btn:focus {
+  background-color: var(--cm-primary-dark);
+  border-color: var(--cm-primary-dark);
+  color: #fff;
+}
+/* Formulaire sur 2 colonnes : départ | arrivée, puis date | bouton */
+@media (min-width: 576px) {
+  .hero-titre {
+    font-size: 3rem;
+  }
+  .hero-section .search-form-horizontal {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 992px) {
+  .hero-section {
+    padding-top: 3.5rem;
+  }
+}
+@media (min-width: 1200px) {
+  .hero-titre {
+    font-size: 3.75rem;
+  }
+}
+@media (min-width: 1400px) {
+  .hero-titre {
+    font-size: 4.5rem;
+  }
+}
+
+/* ---------- Carte du hero ----------
+   Le dessin SVG et les noms (en HTML, placés par-dessus) sont dans
+   .hero-carte-cadre. */
+.hero-carte {
+  position: relative;
+  max-width: 30rem;
+  margin: 0 auto;
+}
+.hero-carte-cadre {
+  position: relative;
+}
+.hero-carte-dessin {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* Le lagon : le tracé des îles avec un très large contour clair,
+   bordé d'un filet un peu plus foncé (la barrière de corail). */
+.hero-carte-recif,
+.hero-carte-lagon,
+.hero-carte-ile {
+  stroke-linejoin: round;
+}
+.hero-carte-recif {
+  fill: #b9dccf;
+  stroke: #b9dccf;
+  stroke-width: 62.5px;
+}
+.hero-carte-lagon {
+  fill: #d3ebe2;
+  stroke: #d3ebe2;
+  stroke-width: 60px;
+}
+.hero-carte-ile {
+  fill: var(--cm-primary);
+  stroke: var(--cm-primary);
+  stroke-width: 1px;
+}
+.hero-carte-trajet {
+  fill: none;
+  stroke: var(--cm-gray-bg);
+  stroke-opacity: 0.45;
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.hero-carte-village {
+  fill: var(--cm-gray-bg);
+  opacity: 0.75;
+}
+/* Le trait du masque qui révèle la route (voir @keyframes tracer) */
+.hero-carte-trace {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 16px;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tracer 1.4s ease-in-out 0.3s forwards;
+}
+.hero-carte-route {
+  fill: none;
+  stroke: var(--cm-gray-bg);
+  stroke-width: 8px;
+  stroke-linecap: round;
+}
+.hero-carte-route-ligne {
+  fill: none;
+  stroke: var(--cm-gold);
+  stroke-width: 1.6px;
+  stroke-dasharray: 4 4;
+}
+.hero-carte-repere {
+  fill: var(--cm-accent);
+}
+.hero-carte-repere-centre {
+  fill: var(--cm-gray-bg);
+}
+.hero-carte-nom {
+  position: absolute;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.4rem;
+  background-color: var(--cm-gray-bg);
+  color: var(--cm-primary-dark);
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 1;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* ---- Animations continues de la carte (keyframes plus bas) ---- */
+/* Le « trafic » sur les trajets proposés */
+.hero-carte-trafic {
+  fill: var(--cm-gray-bg);
+  opacity: 0.9;
+}
+/* Les pointillés jaunes glissent le long de la route */
+.hero-carte-route-ligne {
+  animation: couler 0.9s linear infinite;
+}
+/* La petite voiture qui parcourt la route */
+.hero-carte-voiture-contour {
+  fill: var(--cm-accent);
+}
+.hero-carte-voiture-centre {
+  fill: var(--cm-gray-bg);
+}
+/* L'onde qui part de l'épingle de départ */
+.hero-carte-onde {
+  fill: none;
+  stroke: var(--cm-accent);
+  stroke-width: 2px;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: onde 2.2s ease-out infinite;
+}
+/* Les noms apparaissent en douceur à chaque nouveau trajet */
+.hero-carte-nom {
+  animation: apparaitre 0.5s ease both;
+}
+
+/* ---------- Cartes ---------- */
+.card {
+  border: none;
+  border-radius: 0.9rem;
+  box-shadow: 0 2px 10px rgba(18, 59, 58, 0.07);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(18, 59, 58, 0.13);
+}
+
+/* ---------- Carte de recherche ---------- */
+.search-card {
+  border-radius: 1rem;
+  box-shadow: 0 10px 35px rgba(10, 92, 91, 0.25);
+}
+
+.search-form-horizontal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(9rem, 0.65fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+.search-form-field {
+  min-width: 0;
+}
+.search-form-field .form-label {
+  margin-bottom: 0.35rem;
+}
+.search-form-field .form-control,
+.search-form-field .input-group {
+  min-height: 2.75rem;
+  border-radius: 999px;
+}
+.search-form-field .input-group {
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid #b8cec2;
+}
+.search-form-field .input-group-text,
+.search-form-field .input-group .form-control {
+  border: 0;
+}
+.search-form-field .form-control {
+  border: 1px solid #dce6df;
+  box-shadow: none;
+}
+.search-form-field .input-group .form-control {
+  border-left: 0;
+}
+.search-form-field .form-control:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 0.2rem rgba(45, 108, 88, 0.14);
+}
+.search-form-field .input-group:focus-within {
+  border-color: var(--cm-primary);
+  box-shadow: 0 0 0 0.2rem rgba(45, 108, 88, 0.14);
+}
+.search-form-submit .btn {
+  min-height: 2.75rem;
+  border-radius: 999px;
+}
+.search-form-submit {
+  min-width: 10rem;
+}
+
+@media (max-width: 767.98px) {
+  .search-form-horizontal {
+    grid-template-columns: 1fr;
+  }
+  .search-form-submit {
+    min-width: 0;
+  }
+}
+
+/* ---------- Navbar ---------- */
+.navbar-cm {
+  background-color: #fff;
+  box-shadow: 0 1px 8px rgba(18, 59, 58, 0.08);
+  /* Passage en douceur entre la barre du hero et la barre blanche */
+  transition:
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+/* En haut de l'accueil : même couleur que le hero, sans ombre
+   (classe ajoutée par NavBar.vue). Dès qu'on défile, la barre
+   redevient blanche avec son ombre. */
+.navbar-cm.navbar-sur-hero {
+  background-color: var(--cm-primary-light);
+  box-shadow: none;
+}
+.navbar-cm .nav-link {
+  color: #52665c;
+  font-weight: 500;
+}
+.navbar-cm .nav-link:hover,
+.navbar-cm .nav-link.router-link-active {
+  color: var(--cm-primary);
+}
+.navbar-cm .btn {
+  border-radius: 999px;
+}
+/* Le nom du site dans la même police que le titre du hero */
+.brand-logo {
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 1;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: var(--cm-primary) !important;
+}
+.brand-logo .accent {
+  color: var(--cm-accent);
+}
+/* Dans le pied de page (fond vert foncé), le nom passe en blanc */
+#main-footer .brand-logo {
+  color: #fff !important;
+}
+.user-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.status-passager {
+  background: #e8f2e9;
+  color: var(--cm-primary-dark);
+}
+.status-conducteur {
+  background: #fff0e9;
+  color: #aa482d;
+}
+.status-admin {
+  background: #e7eaf5;
+  color: #384979;
+}
+
+/* ---------- Avatars ---------- */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: var(--cm-primary);
+  flex-shrink: 0;
+}
+.avatar-sm {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+}
+.avatar-lg {
+  width: 72px;
+  font-size: 1.6rem;
+}
+
+/* ---------- Timeline trajet ---------- */
+.trip-route {
+  position: relative;
+  padding-left: 1.4rem;
+}
+.trip-route .point {
+  position: relative;
+}
+.trip-route .point::before {
+  content: "";
+  position: absolute;
+  left: -1.35rem;
+  top: 0.35rem;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2.5px solid var(--cm-primary);
+  background: #fff;
+}
+.trip-route .point.end::before {
+  background: var(--cm-gold);
+  border-color: var(--cm-gold);
+}
+.trip-route .line {
+  position: absolute;
+  left: -1.07rem;
+  top: 1rem;
+  bottom: 0.8rem;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--cm-primary) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+/* ---------- Étoiles ---------- */
+.stars {
+  color: var(--cm-gold);
+}
+
+/* ---------- Badges ---------- */
+.badge-verified {
+  background-color: var(--cm-primary-light);
+  color: var(--cm-primary-dark);
+  font-weight: 600;
+}
+
+/* ---------- Messagerie ---------- */
+.chat-bubble {
+  max-width: 75%;
+  border-radius: 1rem;
+  padding: 0.6rem 0.95rem;
+}
+.chat-bubble.mine {
+  background: var(--cm-primary);
+  color: #fff;
+  border-bottom-right-radius: 0.25rem;
+}
+.chat-bubble.theirs {
+  background: #f0eee4;
+  color: #2d4038;
+  border-bottom-left-radius: 0.25rem;
+}
+.conversation-item.active {
+  background: var(--cm-primary-light);
+  border-left: 3px solid var(--cm-primary);
+}
+
+/* ---------- Auth pages ---------- */
+.auth-wrapper {
+  min-height: calc(100vh - 66px);
+  background: linear-gradient(
+    135deg,
+    var(--cm-primary-dark) 0%,
+    var(--cm-primary) 60%,
+    var(--cm-accent-dark) 100%
+  );
+  display: flex;
+  align-items: center;
+  padding: 2.5rem 0;
+}
+
+/* ---------- Steps how-it-works ---------- */
+.step-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--cm-primary-light);
+  color: var(--cm-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+/* ============================================================
+   ADMINISTRATION
+   ------------------------------------------------------------
+   Un outil de travail : calme et lisible. Menu vert profond à
+   gauche, contenu sur fond clair, panneaux bordés (sans ombre).
+   Titres en Recursive « net » (CASL 0), la version sobre de la
+   police du hero.
+   ============================================================ */
+.admin-coque {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  min-height: calc(100vh - 74px);
+  /* Colonne du menu en vert sur toute la hauteur de la page */
+  background: linear-gradient(
+    to right,
+    var(--cm-primary-dark) 15rem,
+    #f4f7f5 15rem
+  );
+}
+/* ---- Menu ---- */
+.admin-menu {
+  position: sticky;
+  top: 74px;
+  align-self: start;
+  height: calc(100vh - 74px);
+  padding: 1.5rem 1rem;
+  background-color: var(--cm-primary-dark);
+  color: #fff;
+}
+.admin-menu-titre {
+  margin: 0 0.75rem 1.25rem;
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+}
+.admin-menu-titre small {
+  display: block;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.admin-menu-lien {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.15rem;
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.admin-menu-lien:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.admin-menu-lien.router-link-active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 3px 0 0 var(--cm-gold);
+}
+/* Nombre d'éléments à traiter */
+.admin-compteur {
+  margin-left: auto;
+  min-width: 1.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background-color: var(--cm-gold);
+  color: var(--cm-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+/* ---- Contenu ---- */
+.admin-contenu {
+  padding: 2rem 2.5rem 3rem;
+  max-width: 76rem;
+}
+.admin-entete {
+  margin-bottom: 1.75rem;
+}
+.admin-entete h1 {
+  margin-bottom: 0.25rem;
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 0;
+  font-weight: 800;
+  font-size: 1.75rem;
+  color: var(--cm-primary-dark);
+}
+.admin-entete p {
+  margin: 0;
+  color: #5b6f65;
+}
+.admin-panneau {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #dde8e1;
+  border-radius: 0.75rem;
+  background-color: #fff;
+}
+.admin-panneau-titre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cm-dark);
+}
+.admin-panneau-titre a,
+.admin-panneau-titre span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+/* Panneau « À traiter » : un filet doré à gauche le distingue */
+.admin-panneau-urgent {
+  box-shadow: inset 4px 0 0 var(--cm-gold);
+}
+.admin-vide {
+  margin: 0;
+  color: #5b6f65;
+}
+/* ---- Chiffres clés : une bande de valeurs, pas des cartes ---- */
+.admin-chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  margin-bottom: 1.5rem;
+  border: 1px solid #dde8e1;
+  border-radius: 0.75rem;
+  background-color: #fff;
+  overflow: hidden;
+}
+.admin-chiffre {
+  padding: 1rem 1.25rem;
+  border-right: 1px solid #edf2ee;
+  border-bottom: 1px solid #edf2ee;
+}
+.admin-chiffre-libelle {
+  font-size: 0.8125rem;
+  color: #5b6f65;
+}
+.admin-chiffre-valeur {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--cm-dark);
+}
+/* ---- Lignes « à traiter » ---- */
+.admin-ligne {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 0;
+  border-top: 1px solid #edf2ee;
+}
+.admin-ligne:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.admin-ligne-texte {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.admin-ligne-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.admin-justificatif {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0.5rem 0 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+  background-color: #f1f5f2;
+  font-size: 0.8rem;
+  color: #3d5249;
+}
+/* ---- Barres (itinéraires les plus publiés) ----
+   Une seule série : barres fines vert de marque, bout arrondi,
+   valeur écrite au bout (jamais seulement la couleur). */
+.admin-barres {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.admin-barre {
+  display: grid;
+  grid-template-columns: minmax(8rem, 13rem) 1fr 2rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  font-size: 0.875rem;
+}
+.admin-barre-piste {
+  height: 10px;
+}
+.admin-barre-remplie {
+  height: 100%;
+  min-width: 4px;
+  border-radius: 0 4px 4px 0;
+  background-color: var(--cm-primary);
+}
+.admin-barre-valeur {
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* ---- Tableaux ---- */
+.admin-table {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+.admin-table thead th {
+  padding-top: 0.75rem;
+  border-bottom: 1px solid #dde8e1;
+  background: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5b6f65;
+}
+.admin-table td {
+  border-color: #edf2ee;
+}
+.admin-table .nombre {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.admin-filtres {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+/* ---- Tablette et mobile : le menu devient une bande qui défile ---- */
+@media (max-width: 991.98px) {
+  .admin-coque {
+    grid-template-columns: 1fr;
+    background: #f4f7f5;
+  }
+  .admin-menu {
+    position: static;
+    height: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    overflow-x: auto;
+  }
+  .admin-menu-titre {
+    display: none;
+  }
+  .admin-menu-lien {
+    margin: 0;
+  }
+  .admin-menu-lien.router-link-active {
+    box-shadow: inset 0 -3px 0 var(--cm-gold);
+  }
+  .admin-contenu {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+}
+
+/* ---------- Squelettes de chargement ----------
+   Formes grises qui annoncent le contenu pendant son chargement
+   (voir utils/chargement.js). Un reflet clair les balaie
+   (animation "reflet" plus bas). */
+.squelette {
+  border-radius: 0.4rem;
+  background-color: #e3ebe6;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: reflet 1.3s ease-in-out infinite;
+}
+.squelette-ligne {
+  height: 0.8rem;
+}
+.squelette-grande {
+  height: 1.5rem;
+}
+.squelette-rond {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.squelette-bloc {
+  height: 12rem;
+  border-radius: 0.9rem;
+}
+
+/* ---------- Pages d'information (InfoView) ----------
+   Même bandeau vert clair et même police de titre que l'accueil.
+   Le texte est limité à ~70 caractères par ligne pour la lecture. */
+.info-entete {
+  padding: 3rem 0 2.5rem;
+  background-color: var(--cm-primary-light);
+}
+.info-titre {
+  max-width: 18em;
+  margin-bottom: 0.75rem;
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 1;
+  font-weight: 800;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  line-height: 1.08;
+  color: var(--cm-primary-dark);
+}
+.info-intro {
+  max-width: 38em;
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+.info-sommaire {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid #dde8e1;
+}
+.info-sommaire-titre {
+  margin: 0 0 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #5b6f65;
+}
+.info-sommaire-lien {
+  margin-left: -2px;
+  padding: 0.3rem 0 0.3rem 1rem;
+  border-left: 2px solid transparent;
+  font-size: 0.9rem;
+  color: #3d5249;
+  text-decoration: none;
+}
+.info-sommaire-lien:hover {
+  border-left-color: var(--cm-primary);
+  color: var(--cm-primary);
+}
+.info-texte {
+  max-width: 44rem;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+.info-avertissement {
+  margin-bottom: 2rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--cm-gold);
+  background-color: #fff8e6;
+  font-size: 0.9375rem;
+}
+.info-section {
+  margin-bottom: 2.25rem;
+  /* Laisse la place de la navbar quand on arrive par le sommaire */
+  scroll-margin-top: 96px;
+}
+.info-section h2,
+.info-voir-aussi h2 {
+  margin-bottom: 0.75rem;
+  font-family: "Recursive", "Segoe UI", system-ui, sans-serif;
+  font-variation-settings: "CASL" 1;
+  font-weight: 700;
+  font-size: 1.375rem;
+  color: var(--cm-primary-dark);
+}
+.info-section li {
+  margin-bottom: 0.4rem;
+}
+.info-voir-aussi {
+  padding-top: 1.5rem;
+  border-top: 1px solid #dde8e1;
+}
+.info-voir-aussi a {
+  display: inline-block;
+  margin: 0 1.25rem 0.5rem 0;
+}
+
+/* ---------- Divers ---------- */
+.section-title {
+  font-weight: 700;
+  color: var(--cm-dark);
+}
+.min-h-page {
+  min-height: calc(100vh - 66px - 320px);
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+a {
+  color: var(--cm-primary);
+}
+a:hover {
+  color: var(--cm-primary-dark);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--cm-primary);
+  box-shadow: 0 0 0 0.2rem rgba(45, 108, 88, 0.18);
+}
+.form-control,
+.form-select {
+  border-radius: 999px;
+}
+.input-group {
+  border-radius: 999px;
+  overflow: hidden;
+}
+.input-group .input-group-text,
+.input-group .form-control,
+.input-group .btn {
+  border-radius: 0;
+}
+.input-group .input-group-text:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+.input-group > .form-control:last-child,
+.input-group > .btn:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+/* ============================================================
+   ANIMATIONS (niveau débutant)
+   ============================================================
+   Deux techniques simples sont utilisées ici :
+
+   1. Les TRANSITIONS CSS : quand une propriété change (par
+      exemple quand on ajoute une classe), le changement se fait
+      en douceur au lieu d'être instantané.
+
+   2. Les KEYFRAMES (@keyframes) : une animation qui se répète
+      toute seule (exemple : la route qui se dessine sur la
+      carte de l'accueil).
+   ============================================================ */
+
+/* ---------- Apparition au scroll (classe .reveal) ----------
+   Au départ : l'élément est transparent et légèrement décalé
+   vers le bas. Quand le JavaScript ajoute la classe .visible,
+   il revient à sa place en 0,7 seconde. */
+.reveal {
+  opacity: 0; /* invisible au départ */
+  transform: translateY(30px); /* décalé de 30px vers le bas */
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1; /* redevient visible */
+  transform: translateY(0); /* revient à sa place */
+}
+
+/* Variante : arrive depuis la gauche */
+.reveal-gauche {
+  transform: translateX(-40px);
+}
+.reveal-gauche.visible {
+  transform: translateX(0);
+}
+
+/* Variante : arrive depuis la droite */
+.reveal-droite {
+  transform: translateX(40px);
+}
+.reveal-droite.visible {
+  transform: translateX(0);
+}
+
+/* Variante : effet de zoom */
+.reveal-zoom {
+  transform: scale(0.85);
+}
+.reveal-zoom.visible {
+  transform: scale(1);
+}
+
+/* ---------- Délais en cascade ----------
+   Pour que des cartes voisines apparaissent l'une après
+   l'autre, on ajoute une classe delai-1, delai-2, etc. */
+.delai-1 {
+  transition-delay: 0.15s;
+}
+.delai-2 {
+  transition-delay: 0.3s;
+}
+.delai-3 {
+  transition-delay: 0.45s;
+}
+.delai-4 {
+  transition-delay: 0.6s;
+}
+
+/* ---------- Route qui se dessine (carte du hero) ----------
+   @keyframes définit les étapes de l'animation. Le trait du
+   masque a une longueur de 1 (attribut pathLength="1") :
+   décalé de 1, il est caché ; décalé de 0, il est entier.
+   La route apparaît donc du départ vers l'arrivée, une seule
+   fois (forwards = on reste sur la dernière étape). */
+@keyframes tracer {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---------- Carte du hero : animations continues ----------
+   couler : les pointillés avancent d'un motif (4 + 4) en boucle.
+   onde : un cercle grandit en s'effaçant autour de l'épingle.
+   apparaitre : fondu d'entrée des noms de villages. */
+@keyframes couler {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+@keyframes onde {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Reflet des squelettes de chargement ----------
+   Le dégradé clair glisse de la droite vers la gauche, en boucle. */
+@keyframes reflet {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* ---------- Badge qui pulse (messages non lus) ---------- */
+@keyframes pulser {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.badge-pulse {
+  animation: pulser 1.5s ease-in-out infinite;
+}
+
+/* ---------- Lien de navbar souligné au survol ----------
+   La barre sous le lien s'élargit grâce à une transition. */
+.navbar-cm .nav-link {
+  position: relative;
+}
+.navbar-cm .nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.2rem;
+  width: 0; /* barre invisible au départ */
+  height: 2px;
+  background-color: var(--cm-primary);
+  transition: width 0.25s ease; /* la largeur change en douceur */
+}
+.navbar-cm .nav-link:hover::after,
+.navbar-cm .nav-link.router-link-active::after {
+  width: calc(100% - 1rem); /* la barre s'élargit au survol */
+}
+
+/* ---------- Icônes des étapes : grossissent au survol ---------- */
+.step-icon {
+  transition:
+    transform 0.25s ease,
+    background-color 0.25s ease;
+}
+.step-icon:hover {
+  transform: scale(1.1);
+  background-color: var(--cm-accent);
+  color: var(--cm-dark);
+}
+
+/* ---------- Boutons : petit soulèvement au survol ---------- */
+.btn-cm-primary,
+.btn-cm-accent {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.btn-cm-primary:hover,
+.btn-cm-accent:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(36, 66, 56, 0.2);
+}
+
+/* ---------- Accessibilité ----------
+   Si l'utilisateur a demandé "moins d'animations" dans les
+   réglages de son ordinateur, on les désactive. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-gauche,
+  .reveal-droite,
+  .reveal-zoom {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .badge-pulse {
+    animation: none;
+  }
+  /* La route de la carte s'affiche directement, sans se dessiner */
+  .hero-carte-trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .navbar-cm {
+    transition: none;
+  }
+  .squelette {
+    animation: none;
+  }
+  /* Carte du hero : tout reste fixe (la voiture, le trafic et le
+     défilement des trajets sont coupés dans HeroCarte.vue) */
+  .hero-carte-route-ligne,
+  .hero-carte-nom {
+    animation: none;
+  }
+  .hero-carte-onde {
+    display: none;
+  }
+}
