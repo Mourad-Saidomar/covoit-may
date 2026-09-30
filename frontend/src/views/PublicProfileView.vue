@@ -7,15 +7,16 @@
 // ============================================================
 import { useDataStore } from '../stores/data'
 import { useAuthStore } from '../stores/auth'
-import { initials, initialesTexte, formatDate, timeAgo, messageErreur } from '../utils/format'
+import { initialesTexte, formatDate, timeAgo, messageErreur } from '../utils/format'
 import StarRating from '../components/StarRating.vue'
+import AvatarMembre from '../components/AvatarMembre.vue'
 import TripCard from '../components/TripCard.vue'
 import { revelerApresChargement } from '../utils/chargement'
 
 export default {
   name: 'PublicProfileView',
 
-  components: { StarRating, TripCard },
+  components: { StarRating, TripCard, AvatarMembre },
 
   data() {
     return {
@@ -57,7 +58,6 @@ export default {
   },
 
   methods: {
-    initials,
     initialesTexte,
     formatDate,
     timeAgo,
@@ -123,7 +123,7 @@ export default {
       <div class="col-lg-4">
         <div class="card text-center reveal reveal-gauche">
           <div class="card-body p-4">
-            <span class="avatar avatar-lg mx-auto mb-3">{{ initials(membre) }}</span>
+            <AvatarMembre :personne="membre" taille="xl" class="mx-auto mb-3" />
             <h1 class="h4 fw-bold mb-1">
               {{ membre.prenom }} {{ membre.nom }}
             </h1>

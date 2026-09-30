@@ -13,7 +13,7 @@
 // en cas de refus, l'appel lance une erreur avec son message.
 // ============================================================
 import { defineStore } from 'pinia'
-import { api, lire, envoyer, remplacer, modifier, supprimer, ouvrirFichier } from '../services/api'
+import { api, lire, envoyer, remplacer, modifier, supprimer, ouvrirFichier, telechargerFichier } from '../services/api'
 import { COORDONNEES_COMMUNES } from '../data/mapData'
 
 export const useDataStore = defineStore('data', {
@@ -132,6 +132,34 @@ export const useDataStore = defineStore('data', {
       return supprimer('/utilisateurs/moi', { motDePasse })
     },
 
+    // Photo de profil (RG02.19) : image déjà recadrée par le navigateur
+    changerPhoto(image) {
+      const formulaire = new FormData()
+      formulaire.append('photo', image, 'photo.jpg')
+      return api('/utilisateurs/moi/photo', { methode: 'PUT', formulaire })
+    },
+
+    supprimerPhoto() {
+      return supprimer('/utilisateurs/moi/photo')
+    },
+
+    // ========== DOCUMENTS (PDF) ==========
+
+    // Reçu d'une réservation payée
+    telechargerRecu(idReservation) {
+      return telechargerFichier('/documents/recus/' + idReservation, 'recu.pdf')
+    },
+
+    // Relevé mensuel, mois au format « 2026-09 »
+    telechargerReleve(mois) {
+      return telechargerFichier('/documents/releves/' + mois, 'releve-' + mois + '.pdf')
+    },
+
+    // Administrateur : type = 'activite', 'transactions' ou 'journal'
+    telechargerDocumentAdmin(type, mois) {
+      return telechargerFichier('/documents/admin/' + type + '/' + mois, type + '-' + mois + '.pdf')
+    },
+
     // ========== VÉHICULES ET DEMANDE CONDUCTEUR ==========
 
     mesVehicules() {
@@ -174,6 +202,15 @@ export const useDataStore = defineStore('data', {
 
     envoyerMessage(idDestinataire, contenu) {
       return envoyer('/messages', { idDestinataire, contenu })
+    },
+
+    // Photo ou message vocal (RG09.6, RG09.7)
+    envoyerFichierMessage(idDestinataire, fichier, nomFichier, dureeSecondes) {
+      const formulaire = new FormData()
+      formulaire.append('idDestinataire', idDestinataire)
+      if (dureeSecondes) formulaire.append('dureeSecondes', dureeSecondes)
+      formulaire.append('fichier', fichier, nomFichier)
+      return api('/messages/fichier', { methode: 'POST', formulaire })
     },
 
     // ========== ALERTES ET FAVORIS ==========

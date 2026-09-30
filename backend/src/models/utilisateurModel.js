@@ -5,11 +5,20 @@
 // Les règles de gestion sont dans le service et dans la base.
 // Le paramètre "cx" (facultatif) sert aux transactions.
 // ============================================================
+import path from 'node:path'
 import { requete } from '../config/db.js'
 
 // Colonnes lisibles : le mot de passe n'en fait jamais partie
-const COLONNES = `id_utilisateur, nom, prenom, email, telephone, adresse, commune, date_naissance, bio,
+const COLONNES = `id_utilisateur, nom, prenom, email, telephone, adresse, commune, date_naissance, bio, photo,
   role, statut_verification, statut_compte, note_moyenne, nb_avis, date_inscription, id_admin`
+
+// Adresse (relative à /api) de la photo de profil, ou null s'il n'y en a pas.
+// Le « v » change avec chaque nouvelle photo : le navigateur peut garder
+// l'image en cache sans risquer d'afficher l'ancienne.
+export function urlPhoto(id, cle) {
+  if (!cle) return null
+  return `/utilisateurs/${id}/photo?v=${path.basename(cle).slice(0, 12)}`
+}
 
 // Ligne de la base -> objet envoyé au navigateur (mêmes noms que le frontend)
 export function versUtilisateur(l) {
@@ -23,6 +32,7 @@ export function versUtilisateur(l) {
     commune: l.commune,
     dateNaissance: l.date_naissance,
     bio: l.bio,
+    photo: urlPhoto(l.id_utilisateur, l.photo),
     role: l.role,
     verifie: l.statut_verification === 1,
     statut: l.statut_compte,
@@ -40,6 +50,7 @@ export function versProfilPublic(l) {
     nom: l.nom_initiale,
     commune: l.commune,
     bio: l.bio,
+    photo: urlPhoto(l.id_utilisateur, l.photo),
     role: l.role,
     verifie: l.statut_verification === 1,
     note: l.note_moyenne,
@@ -123,9 +134,22 @@ export async function anonymiser(id, cx) {
   await requete(
     `UPDATE utilisateur
         SET nom = 'Anonyme', prenom = 'Compte supprimé', email = CONCAT('supprime-', id_utilisateur, '@anonyme.invalid'),
-            mot_de_passe = NULL, telephone = NULL, adresse = NULL, commune = NULL, date_naissance = NULL, bio = NULL,
+            mot_de_passe = NULL, telephone = NULL, adresse = NULL, commune = NULL, date_naissance = NULL, bio = NULL, photo = NULL,
             statut_compte = 'supprime', date_suppression = NOW()
       WHERE id_utilisateur = ?`, [id], cx)
+}
+
+// ---------- Photo de profil (RG02.19) ----------
+
+// La clé de la photo et le statut du compte (la photo d'un compte
+// suspendu, refusé ou supprimé n'est plus montrée)
+export async function lirePhoto(id) {
+  const [ligne] = await requete('SELECT photo, statut_compte FROM utilisateur WHERE id_utilisateur = ?', [id])
+  return ligne || null
+}
+
+export async function modifierPhoto(id, cle) {
+  await requete('UPDATE utilisateur SET photo = ? WHERE id_utilisateur = ?', [cle, id])
 }
 
 export async function changerStatut(id, statut, cx) {

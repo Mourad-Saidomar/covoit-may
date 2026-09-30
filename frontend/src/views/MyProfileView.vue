@@ -6,6 +6,8 @@
 // - passager (ou conducteur pas encore vérifié) : demande pour
 //   devenir conducteur, avec le véhicule et les justificatifs ;
 // - conducteur vérifié : ses véhicules ;
+// - photo de profil (recadrée par le navigateur avant l'envoi) ;
+// - relevés mensuels en PDF ;
 // - favoris, informations personnelles, mot de passe ;
 // - suppression du compte (le mot de passe est redemandé).
 // Tout passe par l'API : les règles sont vérifiées par le serveur.
@@ -14,8 +16,10 @@ import { reactive, ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useDataStore } from "@/stores/data";
 import { useAuthStore } from "@/stores/auth";
-import { initials, formatDate, messageErreur } from "@/utils/format";
+import { formatDate, messageErreur } from "@/utils/format";
+import { preparerPhotoProfil } from "@/utils/image";
 import StarRating from "@/components/StarRating.vue";
+import AvatarMembre from "@/components/AvatarMembre.vue";
 
 const router = useRouter();
 const data = useDataStore();
@@ -84,6 +88,80 @@ async function save() {
     }, 2500);
   } catch (e) {
     erreurProfil.value = messageErreur(e);
+  }
+}
+
+// ---- Photo de profil (RG02.19) ----
+const envoiPhoto = ref(false);
+const erreurPhoto = ref("");
+const TYPES_PHOTO = ["image/jpeg", "image/png", "image/webp"];
+
+async function choisirPhoto(evenement) {
+  const fichier = evenement.target.files[0];
+  evenement.target.value = "";
+  erreurPhoto.value = "";
+  if (!fichier) return;
+  if (!TYPES_PHOTO.includes(fichier.type)) {
+    erreurPhoto.value = "Formats acceptés : JPEG, PNG ou WebP.";
+    return;
+  }
+  if (fichier.size > 15 * 1024 * 1024) {
+    erreurPhoto.value = "Cette image est trop lourde (15 Mo au maximum).";
+    return;
+  }
+  envoiPhoto.value = true;
+  try {
+    // Carré de 512 px en JPEG : quelques dizaines de Ko au lieu de plusieurs Mo
+    const image = await preparerPhotoProfil(fichier);
+    auth.utilisateur = await data.changerPhoto(image);
+  } catch (e) {
+    erreurPhoto.value = messageErreur(e);
+  } finally {
+    envoiPhoto.value = false;
+  }
+}
+
+async function retirerPhoto() {
+  if (!confirm("Retirer votre photo de profil ?")) return;
+  erreurPhoto.value = "";
+  try {
+    auth.utilisateur = await data.supprimerPhoto();
+  } catch (e) {
+    erreurPhoto.value = messageErreur(e);
+  }
+}
+
+// ---- Relevés mensuels (PDF) ----
+// Les 12 derniers mois, sans remonter avant l'inscription
+const moisDisponibles = computed(() => {
+  const liste = [];
+  const debut = String(u.value.membreDepuis || "").slice(0, 7);
+  const date = new Date();
+  for (let i = 0; i < 12; i++) {
+    const valeur = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+    if (debut && valeur < debut) break;
+    liste.push({
+      valeur,
+      libelle: date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+    });
+    date.setDate(1);
+    date.setMonth(date.getMonth() - 1);
+  }
+  return liste;
+});
+const moisReleve = ref(moisDisponibles.value[0] ? moisDisponibles.value[0].valeur : "");
+const telechargementReleve = ref(false);
+const erreurReleve = ref("");
+
+async function telechargerReleve() {
+  erreurReleve.value = "";
+  telechargementReleve.value = true;
+  try {
+    await data.telechargerReleve(moisReleve.value);
+  } catch (e) {
+    erreurReleve.value = messageErreur(e);
+  } finally {
+    telechargementReleve.value = false;
   }
 }
 
@@ -241,7 +319,25 @@ async function deleteAccount() {
       <div class="col-lg-4 reveal reveal-gauche delai-1">
         <div class="card text-center mb-4">
           <div class="card-body p-4">
-            <span class="avatar avatar-lg mx-auto mb-3">{{ initials(u) }}</span>
+            <!-- Photo de profil : le bouton appareil photo ouvre le choix du fichier -->
+            <div class="photo-profil">
+              <AvatarMembre :personne="u" taille="xl" />
+              <template v-if="estMembre">
+                <label class="photo-profil-bouton" for="photo-profil-fichier"
+                  :title="u.photo ? 'Changer la photo' : 'Ajouter une photo'">
+                  <i class="bi bi-camera-fill" aria-hidden="true"></i>
+                </label>
+                <input id="photo-profil-fichier" type="file" class="visually-hidden"
+                  accept="image/jpeg,image/png,image/webp"
+                  :aria-label="u.photo ? 'Changer la photo de profil' : 'Ajouter une photo de profil'"
+                  :disabled="envoiPhoto" @change="choisirPhoto" />
+              </template>
+              <div v-if="envoiPhoto" class="photo-profil-chargement" role="status">
+                <span class="spinner-border spinner-border-sm text-cm-primary"></span>
+                <span class="visually-hidden">Envoi de la photo…</span>
+              </div>
+            </div>
+            <p v-if="erreurPhoto" class="small text-danger mb-2" role="alert">{{ erreurPhoto }}</p>
             <h2 class="h5 fw-bold mb-1">{{ u.prenom }} {{ u.nom }}</h2>
             <p class="small text-muted mb-2">{{ u.email }}</p>
             <span class="badge" :class="u.role === 'conducteur' ? 'bg-cm-primary' : 'bg-secondary'">
@@ -254,6 +350,9 @@ async function deleteAccount() {
               <div class="mt-2">
                 <StarRating :note="u.note" :nb-avis="u.nbAvis" />
               </div>
+              <button v-if="u.photo" type="button" class="btn btn-link btn-sm text-muted mt-1 p-0" @click="retirerPhoto">
+                <i class="bi bi-x-circle me-1"></i>Retirer la photo
+              </button>
               <p class="small text-muted mt-2 mb-0">
                 Membre depuis {{ formatDate(u.membreDepuis) }}
               </p>
@@ -412,7 +511,7 @@ async function deleteAccount() {
             <router-link v-for="f in favoris" :key="f.id"
               :to="{ name: 'public-profile', params: { id: f.id } }"
               class="d-flex align-items-center gap-2 py-2 text-decoration-none border-bottom">
-              <span class="avatar avatar-sm">{{ initials(f) }}</span>
+              <AvatarMembre :personne="f" taille="sm" />
               <span class="small fw-semibold">{{ f.prenom }} {{ f.nom }}</span>
               <StarRating :note="f.note" small />
             </router-link>
@@ -474,6 +573,29 @@ async function deleteAccount() {
               </button>
             </div>
           </form>
+
+          <!-- Relevés mensuels (PDF) -->
+          <div class="card mt-4">
+            <div class="card-body p-4">
+              <h2 class="h6 fw-bold text-cm-primary mb-1">Mes relevés mensuels</h2>
+              <p class="small text-muted">
+                Un PDF par mois : vos trajets réservés et vos dépenses<span v-if="auth.estConducteur">, ainsi que
+                vos trajets de conducteur et vos revenus nets</span>. Les reçus de chaque paiement sont dans
+                <router-link :to="{ name: 'my-bookings' }">Mes réservations</router-link>.
+              </p>
+              <div v-if="erreurReleve" class="alert alert-danger py-2 small" role="alert">{{ erreurReleve }}</div>
+              <div class="d-flex gap-2 flex-wrap align-items-center">
+                <select v-model="moisReleve" class="form-select w-auto" aria-label="Mois du relevé">
+                  <option v-for="m in moisDisponibles" :key="m.valeur" :value="m.valeur">{{ m.libelle }}</option>
+                </select>
+                <button type="button" class="btn btn-outline-cm" :disabled="!moisReleve || telechargementReleve"
+                  @click="telechargerReleve">
+                  <span v-if="telechargementReleve" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else class="bi bi-file-earmark-pdf me-1"></i>Télécharger le relevé
+                </button>
+              </div>
+            </div>
+          </div>
 
           <form class="card mt-4" @submit.prevent="changerMotDePasse">
             <div class="card-body p-4">

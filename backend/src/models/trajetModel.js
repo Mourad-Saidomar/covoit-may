@@ -2,6 +2,7 @@
 // Modèle TRAJET
 // ============================================================
 import { requete } from '../config/db.js'
+import { urlPhoto } from './utilisateurModel.js'
 
 // Colonne SET : le pilote MariaDB la renvoie en tableau ['lun', 'mar'],
 // parfois en texte "lun,mar" selon la requête
@@ -37,7 +38,8 @@ export function versTrajet(l) {
       nom: l.conducteur_nom,
       note: l.conducteur_note,
       nbAvis: l.conducteur_nb_avis,
-      verifie: l.conducteur_verifie === 1
+      verifie: l.conducteur_verifie === 1,
+      photo: urlPhoto(trajet.conducteurId, l.conducteur_photo)
     }
   }
   if (l.nb_demandes !== undefined) trajet.nbDemandesEnAttente = l.nb_demandes
@@ -74,7 +76,7 @@ export async function trouverDetail(id) {
   const [ligne] = await requete(
     `SELECT t.*, u.prenom AS conducteur_prenom, CONCAT(LEFT(u.nom, 1), '.') AS conducteur_nom,
             u.note_moyenne AS conducteur_note, u.nb_avis AS conducteur_nb_avis,
-            u.statut_verification AS conducteur_verifie,
+            u.statut_verification AS conducteur_verifie, u.photo AS conducteur_photo,
             CONCAT_WS(' ', v.marque, v.modele, v.couleur) AS vehicule
        FROM trajet t
        JOIN utilisateur u ON u.id_utilisateur = t.id_utilisateur

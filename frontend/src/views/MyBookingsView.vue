@@ -3,25 +3,26 @@
 // Page "Mes réservations" (côté passager)
 // ------------------------------------------------------------
 // Deux onglets : "À venir" et "Historique".
-// On peut contacter le conducteur, annuler une réservation
-// ou laisser un avis après le trajet (petite fenêtre modale).
+// On peut contacter le conducteur, annuler une réservation,
+// télécharger le reçu du paiement (PDF) ou laisser un avis après
+// le trajet (petite fenêtre modale).
 // ============================================================
 import { useDataStore } from "../stores/data";
 import {
   formatDateTime,
   formatPrice,
-  initials,
   messageErreur,
   STATUT_RESERVATION,
   STATUT_PAIEMENT,
 } from "../utils/format";
 import SqueletteTrajet from "../components/SqueletteTrajet.vue";
+import AvatarMembre from "../components/AvatarMembre.vue";
 import { revelerApresChargement } from "../utils/chargement";
 
 export default {
   name: "MyBookingsView",
 
-  components: { SqueletteTrajet },
+  components: { SqueletteTrajet, AvatarMembre },
 
   data() {
     return {
@@ -41,6 +42,8 @@ export default {
         envoi: false,
       },
       declencheurAvis: null,
+      // Reçu en cours de téléchargement (id de la réservation)
+      recuEnCours: null,
       // Les libellés et couleurs des statuts
       STATUT_RESERVATION: STATUT_RESERVATION,
       STATUT_PAIEMENT: STATUT_PAIEMENT,
@@ -90,9 +93,21 @@ export default {
   },
 
   methods: {
-    initials,
     formatDateTime,
     formatPrice,
+
+    // Reçu du paiement en PDF, généré par le serveur
+    async telechargerRecu(r) {
+      this.recuEnCours = r.id;
+      this.erreur = "";
+      try {
+        await this.data.telechargerRecu(r.id);
+      } catch (erreur) {
+        this.erreur = messageErreur(erreur);
+      } finally {
+        this.recuEnCours = null;
+      }
+    },
 
     async charger() {
       try {
@@ -278,9 +293,7 @@ export default {
           </div>
           <div class="col-md-3">
             <div class="d-flex align-items-center gap-2">
-              <span class="avatar avatar-sm">{{
-                initials(conducteurDe(r))
-              }}</span>
+              <AvatarMembre :personne="conducteurDe(r)" taille="sm" />
               <div class="small">
                 <div class="fw-semibold">
                   {{ conducteurDe(r).prenom }} {{ conducteurDe(r).nom }}
@@ -329,6 +342,17 @@ export default {
               >
                 <i class="bi bi-chat-dots"></i> Contacter
               </router-link>
+              <!-- Reçu du paiement en PDF (preuve de la transaction) -->
+              <button
+                v-if="r.paiement"
+                class="btn btn-sm btn-outline-secondary"
+                :disabled="recuEnCours === r.id"
+                :title="'Télécharger le reçu ' + r.paiement.reference"
+                @click="telechargerRecu(r)"
+              >
+                <span v-if="recuEnCours === r.id" class="spinner-border spinner-border-sm"></span>
+                <i v-else class="bi bi-file-earmark-pdf"></i> Reçu
+              </button>
               <button
                 v-if="peutNoter(r)"
                 class="btn btn-sm btn-cm-accent"

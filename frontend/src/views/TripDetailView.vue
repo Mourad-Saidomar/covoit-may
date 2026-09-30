@@ -8,15 +8,16 @@
 // ============================================================
 import { useDataStore } from '../stores/data'
 import { useAuthStore } from '../stores/auth'
-import { formatDateLong, formatTime, formatPrice, initials, initialesTexte, messageErreur, MODES_PAIEMENT } from '../utils/format'
+import { formatDateLong, formatTime, formatPrice, initialesTexte, messageErreur, MODES_PAIEMENT } from '../utils/format'
 import StarRating from '../components/StarRating.vue'
+import AvatarMembre from '../components/AvatarMembre.vue'
 import TripMap from '../components/TripMap.vue'
 import { revelerApresChargement } from '../utils/chargement'
 
 export default {
   name: 'TripDetailView',
 
-  components: { StarRating, TripMap },
+  components: { StarRating, TripMap, AvatarMembre },
 
   data() {
     return {
@@ -32,6 +33,8 @@ export default {
       paiementEnCours: false,
       erreurReservation: '',
       reservationCreee: null,
+      recuEnCours: false,
+      erreurRecu: '',
       MODES_PAIEMENT
     }
   },
@@ -73,8 +76,20 @@ export default {
   },
 
   methods: {
-    initials,
     initialesTexte,
+
+    // Justificatif PDF du paiement qui vient d'être fait
+    async telechargerRecu() {
+      this.recuEnCours = true
+      this.erreurRecu = ''
+      try {
+        await this.data.telechargerRecu(this.reservationCreee.id)
+      } catch (erreur) {
+        this.erreurRecu = messageErreur(erreur)
+      } finally {
+        this.recuEnCours = false
+      }
+    },
 
     async charger() {
       this.chargement = true
@@ -279,7 +294,7 @@ export default {
           <div class="card-body p-4">
             <h2 class="h6 fw-bold mb-3">Votre conducteur</h2>
             <div class="d-flex align-items-center gap-3 flex-wrap">
-              <span class="avatar avatar-lg">{{ initials(conducteur) }}</span>
+              <AvatarMembre :personne="conducteur" taille="lg" />
               <div class="flex-grow-1">
                 <router-link :to="{ name: 'public-profile', params: { id: conducteur.id } }"
                   class="fw-bold fs-5 text-decoration-none">
@@ -337,9 +352,19 @@ export default {
                 Le paiement est seulement autorisé : il sera encaissé quand le conducteur acceptera,
                 et libéré s'il refuse.
               </p>
+              <!-- Preuve de la transaction : le justificatif PDF du paiement -->
+              <button v-if="reservationCreee" type="button" class="btn btn-outline-cm w-100 mb-2"
+                :disabled="recuEnCours" @click="telechargerRecu">
+                <span v-if="recuEnCours" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="bi bi-file-earmark-pdf me-1"></i>Télécharger le justificatif (PDF)
+              </button>
+              <p v-if="erreurRecu" class="small text-danger" role="alert">{{ erreurRecu }}</p>
               <router-link to="/mes-reservations" class="btn btn-cm-primary w-100">
                 Voir mes réservations
               </router-link>
+              <p class="small text-muted mt-2 mb-0">
+                Le reçu définitif est disponible dans vos réservations dès que le paiement est encaissé.
+              </p>
             </div>
 
             <!-- Étape 2 : le paiement -->

@@ -26,6 +26,10 @@ export default {
       erreur: "",
       // Ce qui est tapé dans la recherche du hero (la carte le suit)
       recherche: { depart: "", arrivee: "" },
+      // Hauteur du slogan, en pixels : sur tablette, la carte prend
+      // la même hauteur (voir mounted et main.css « Hero »)
+      hauteurSlogan: 0,
+      observateur: null,
       // Les 4 étapes de "Comment ça marche"
       etapes: [
         {
@@ -128,6 +132,19 @@ export default {
 
   // Au chargement de la page : squelettes, puis les trajets de l'API
   async mounted() {
+    // La hauteur du slogan change avec la largeur de l'écran : on la suit.
+    // La mise à jour attend l'image suivante (requestAnimationFrame) et
+    // ignore les écarts de moins de 2 px : la carte change la largeur du
+    // slogan, qui pourrait sinon se remesurer en boucle.
+    if (window.ResizeObserver) {
+      this.observateur = new ResizeObserver((entrees) => {
+        const hauteur = Math.round(entrees[0].contentRect.height);
+        requestAnimationFrame(() => {
+          if (Math.abs(hauteur - this.hauteurSlogan) >= 2) this.hauteurSlogan = hauteur;
+        });
+      });
+      this.observateur.observe(this.$refs.slogan);
+    }
     try {
       await this.data.chargerTrajetsAVenir();
     } catch (erreur) {
@@ -137,23 +154,33 @@ export default {
       revelerApresChargement();
     }
   },
+
+  beforeUnmount() {
+    if (this.observateur) this.observateur.disconnect();
+  },
 };
 </script>
 
 <template>
   <div>
-    <!-- HERO : la recherche à gauche, la carte de l'île à droite.
+    <!-- HERO : trois zones placées par une grille (main.css, « Hero ») :
+         - mobile : le slogan, la recherche, puis la carte ;
+         - tablette : le slogan et la carte côte à côte, à la même
+           hauteur, la recherche en dessous sur toute la largeur ;
+         - ordinateur : le slogan et la recherche à gauche, la carte à droite.
          La carte suit ce qui est tapé dans le formulaire. -->
     <section id="hero-section" class="hero-section">
       <div class="container">
-        <div class="row align-items-center gy-5">
-          <div class="col-lg-6">
+        <div class="hero-grille">
+          <div ref="slogan" class="hero-slogan">
             <h1 class="hero-titre">Même trajet,<br />même voiture.</h1>
             <p class="hero-texte">
               Chaque jour, des habitants de Mayotte proposent les trajets
               qu'ils font déjà. Réservez une place et partagez les frais
               d'essence.
             </p>
+          </div>
+          <div class="hero-recherche">
             <SearchForm
               aria-label="Rechercher un trajet"
               @changement="recherche = $event"
@@ -163,7 +190,10 @@ export default {
               <router-link to="/inscription">Créer mon compte</router-link>
             </p>
           </div>
-          <div class="col-lg-6">
+          <div
+            class="hero-zone-carte"
+            :style="hauteurSlogan ? { '--hauteur-slogan': hauteurSlogan + 'px' } : null"
+          >
             <HeroCarte
               :depart="recherche.depart"
               :arrivee="recherche.arrivee"

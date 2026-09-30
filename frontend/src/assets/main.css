@@ -479,7 +479,8 @@ body {
 }
 .trip-route .line {
   position: absolute;
-  left: -1.07rem;
+  /* centré sous les ronds : 1,4rem - 1,35rem + 5,5 px (demi-rond) - 1 px (demi-trait) */
+  left: calc(0.05rem + 4.5px);
   top: 1rem;
   bottom: 0.8rem;
   width: 2px;
@@ -1203,5 +1204,633 @@ a:hover {
   }
   .hero-carte-onde {
     display: none;
+  }
+}
+
+/* ============================================================
+   AMÉLIORATIONS (version 3) : avatars, hero tablette, cartes de
+   trajet, menu mobile, photo de profil, pièces jointes, documents
+   ============================================================ */
+
+/* ---------- Avatars : photo de profil ou initiales ----------
+   Composant AvatarMembre.vue. La photo remplit le rond (recadrée). */
+.avatar {
+  overflow: hidden;
+  line-height: 1;
+}
+.avatar-lg {
+  height: 72px;
+}
+.avatar-xl {
+  width: 112px;
+  height: 112px;
+  font-size: 2.4rem;
+}
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Hero : trois zones placées par une grille ----------
+   HomeView.vue : .hero-slogan, .hero-recherche, .hero-zone-carte.
+   Mobile : les trois l'une sous l'autre. */
+.hero-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "slogan" "recherche" "carte";
+}
+.hero-slogan {
+  grid-area: slogan;
+}
+.hero-recherche {
+  grid-area: recherche;
+}
+.hero-zone-carte {
+  grid-area: carte;
+  margin-top: 3rem;
+}
+/* Tablette : le slogan et la carte côte à côte, la carte à la
+   hauteur exacte du slogan (mesurée par HomeView : --hauteur-slogan),
+   puis la recherche sur toute la largeur, juste en dessous. */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .hero-grille {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "slogan carte"
+      "recherche recherche";
+    column-gap: 2rem;
+  }
+  .hero-slogan {
+    align-self: center;
+  }
+  /* Un titre un peu plus grand : le slogan, donc la carte, gagnent en hauteur */
+  .hero-slogan .hero-titre {
+    font-size: 3.6rem;
+  }
+  .hero-slogan .hero-texte {
+    margin-bottom: 0;
+  }
+  .hero-zone-carte {
+    margin-top: 0;
+  }
+  .hero-zone-carte .hero-carte {
+    height: var(--hauteur-slogan, 18rem);
+    /* largeur = hauteur × proportions du dessin (496 × 638) */
+    width: calc(var(--hauteur-slogan, 18rem) * 496 / 638);
+    max-width: none;
+    margin: 0;
+  }
+  .hero-zone-carte .hero-carte-cadre {
+    height: 100%;
+  }
+  .hero-zone-carte .hero-carte-dessin {
+    height: 100%;
+  }
+  .hero-recherche {
+    margin-top: 2rem;
+  }
+  /* Toute la largeur : départ | arrivée | date | bouton sur une ligne */
+  .hero-section .search-form-horizontal {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(8.5rem, 0.7fr) auto;
+  }
+  .hero-section .search-form-submit {
+    min-width: 0;
+  }
+}
+/* Ordinateur : le slogan et la recherche à gauche, la carte à droite */
+@media (min-width: 992px) {
+  .hero-grille {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "slogan carte"
+      "recherche carte";
+    column-gap: 1.5rem;
+  }
+  .hero-slogan {
+    align-self: end;
+  }
+  .hero-recherche {
+    align-self: start;
+  }
+  .hero-zone-carte {
+    margin-top: 0;
+    align-self: center;
+  }
+}
+
+/* ---------- Carte de trajet (TripCard.vue, SqueletteTrajet.vue) ----------
+   Mobile : itinéraire et prix en haut, conducteur dessous après un
+   filet pointillé. Tablette et plus : itinéraire | conducteur | prix. */
+.trajet-carte-lien {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.trajet-carte-lien:hover {
+  color: inherit;
+}
+.trajet-carte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "itineraire prix"
+    "conducteur conducteur";
+  gap: 1rem 1.25rem;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.trajet-carte-itineraire {
+  grid-area: itineraire;
+  min-width: 0;
+}
+.trajet-carte .trip-route {
+  padding-left: 1.5rem;
+}
+.trajet-carte .trip-route .point::before {
+  left: -1.5rem;
+}
+.trajet-carte .trip-route .line {
+  left: 4.5px;
+}
+.trajet-carte-lieu {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--cm-dark);
+  overflow-wrap: anywhere;
+}
+.trajet-carte-heure {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cm-primary);
+}
+.trajet-carte-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: #5b6f65;
+}
+.trajet-carte-prix {
+  grid-area: prix;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.trajet-carte-montant {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--cm-primary);
+}
+.trajet-carte-par-place {
+  font-size: 0.75rem;
+  color: #6b7b73;
+}
+.trajet-carte-places {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.trajet-carte-conducteur {
+  grid-area: conducteur;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-top: 0.9rem;
+  border-top: 1px dashed #dfe7e2;
+}
+.min-w-0 {
+  min-width: 0;
+}
+.squelette-prix {
+  width: 4.5rem;
+}
+@media (min-width: 768px) {
+  .trajet-carte {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
+    grid-template-areas: "itineraire conducteur prix";
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.35rem 1.6rem;
+  }
+  .trajet-carte-conducteur {
+    padding-top: 0;
+    padding-left: 1.5rem;
+    border-top: 0;
+    border-left: 1px dashed #dfe7e2;
+  }
+}
+
+/* ---------- Barre de navigation : icônes (ordinateur) ---------- */
+.navbar-cm .nav-link > .bi {
+  margin-right: 0.3rem;
+}
+@media (min-width: 992px) {
+  .menu-panneau {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+  }
+  .menu-boutons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .navbar-cm .nav-icone > .bi {
+    font-size: 1.25rem;
+    margin-right: 0;
+  }
+  .navbar-cm .menu-compteur {
+    position: absolute;
+    top: 0.35rem;
+    left: 100%;
+    transform: translate(-60%, -30%);
+    font-size: 0.6rem;
+  }
+  /* Pas de soulignement sous une icône seule, ni sous l'avatar (la flèche
+     du menu déroulant de Bootstrap y devenait un petit trait vert) */
+  .navbar-cm .nav-icone::after,
+  .navbar-cm #user-menu::after {
+    display: none;
+  }
+}
+
+/* ---------- Bouton « burger » : 3 traits qui deviennent une croix ---------- */
+.burger {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(45, 108, 88, 0.2);
+  border-radius: 14px;
+  background-color: #fff;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.burger:hover {
+  border-color: var(--cm-primary);
+}
+.burger:focus-visible {
+  outline: 3px solid rgba(45, 108, 88, 0.35);
+  outline-offset: 2px;
+}
+.burger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--cm-primary-dark);
+  transition:
+    transform 0.25s ease,
+    opacity 0.2s ease;
+}
+/* Ouvert : le trait du haut descend et tourne, celui du bas monte */
+.burger[aria-expanded="true"] {
+  background-color: var(--cm-primary);
+  border-color: var(--cm-primary);
+}
+.burger[aria-expanded="true"] span {
+  background-color: #fff;
+}
+.burger[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.burger[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+.burger[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+.burger-pastille {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background-color: var(--cm-danger);
+}
+
+/* ---------- Panneau du menu mobile et tablette ---------- */
+@media (max-width: 991.98px) {
+  /* Fermé : hauteur nulle ; ouvert : il se déroule en douceur */
+  .navbar-cm .menu-cm {
+    display: block;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      max-height 0.35s ease,
+      opacity 0.2s ease;
+  }
+  .navbar-cm .menu-cm.ouvert {
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    opacity: 1;
+  }
+  .navbar-cm.menu-est-ouvert {
+    background-color: #fff;
+    box-shadow: 0 10px 30px rgba(18, 59, 58, 0.14);
+  }
+  .menu-panneau {
+    margin: 0.85rem 0 0.75rem;
+    padding: 0.5rem;
+    border: 1px solid #e3ece6;
+    border-radius: 1.1rem;
+    background-color: #fff;
+  }
+  /* La carte du membre en tête du panneau */
+  .menu-profil {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
+    padding: 0.85rem;
+    border-radius: 0.9rem;
+    background-color: var(--cm-primary-light);
+    color: var(--cm-dark);
+    text-decoration: none;
+  }
+  .menu-profil .avatar-lg {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+  .menu-profil-texte {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+  .menu-profil-nom {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  /* Chaque lien : une ligne avec son icône dans un rond */
+  .navbar-cm .menu-panneau .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 0.65rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: none;
+    color: var(--cm-dark);
+    font-weight: 600;
+    text-align: left;
+  }
+  .navbar-cm .menu-panneau .nav-link::after {
+    display: none;
+  }
+  .navbar-cm .menu-panneau .nav-link > .bi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0;
+    border-radius: 50%;
+    background-color: #f3f1e8;
+    color: var(--cm-primary);
+    font-size: 1.05rem;
+  }
+  .navbar-cm .menu-panneau .nav-link:hover,
+  .navbar-cm .menu-panneau .nav-link.router-link-active {
+    background-color: var(--cm-primary-light);
+    color: var(--cm-primary-dark);
+  }
+  .navbar-cm .menu-panneau .nav-link.router-link-active > .bi {
+    background-color: var(--cm-primary);
+    color: #fff;
+  }
+  .navbar-cm .menu-compteur {
+    margin-left: auto;
+    font-size: 0.72rem;
+  }
+  .menu-separateur {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid #edf1ee;
+  }
+  .navbar-cm .menu-panneau .menu-deconnexion {
+    color: var(--cm-danger);
+  }
+  .navbar-cm .menu-panneau .menu-deconnexion > .bi {
+    background-color: #fbe9e6;
+    color: var(--cm-danger);
+  }
+  .menu-boutons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0.25rem 0.25rem;
+  }
+}
+
+/* ---------- Photo de profil (MyProfileView) ---------- */
+.photo-profil {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.photo-profil-bouton {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background-color: var(--cm-accent);
+  color: var(--cm-dark);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.photo-profil-bouton:hover {
+  transform: scale(1.08);
+}
+.photo-profil-chargement {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+/* ---------- Messagerie : photos et messages vocaux ---------- */
+.chat-bubble.chat-media {
+  padding: 0.35rem;
+}
+.chat-photo {
+  display: block;
+  max-width: min(260px, 60vw);
+  max-height: 320px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.8rem;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+.chat-photo-attente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 150px;
+  border-radius: 0.8rem;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+.chat-vocal {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* tient dans une bulle (75 % de la conversation) même sur un petit écran */
+  width: min(230px, 52vw);
+  padding: 0.25rem 0.35rem;
+}
+.chat-vocal-lecture {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  font-size: 1.1rem;
+}
+.chat-bubble.theirs .chat-vocal-lecture {
+  background-color: var(--cm-primary);
+  color: #fff;
+}
+.chat-vocal-piste {
+  position: relative;
+  flex-grow: 1;
+  height: 4px;
+  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 0.15);
+}
+.chat-bubble.mine .chat-vocal-piste {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+.chat-vocal-avance {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background-color: currentColor;
+}
+.chat-vocal-duree {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+/* Barre d'écriture : boutons photo et micro */
+.chat-outil {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+}
+/* Enregistrement en cours d'un message vocal */
+.enregistreur {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-grow: 1;
+  min-height: 42px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background-color: #fdf0ec;
+  color: var(--cm-accent-dark);
+  font-weight: 600;
+}
+.enregistreur-point {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--cm-danger);
+  animation: pulser 1.2s ease-in-out infinite;
+}
+.enregistreur-temps {
+  font-variant-numeric: tabular-nums;
+}
+/* Photo agrandie par-dessus la page */
+.visionneuse {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(18, 30, 26, 0.88);
+  cursor: zoom-out;
+}
+.visionneuse img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0.5rem;
+}
+
+/* ---------- Documents PDF (profil, réservations, administration) ---------- */
+.document-ligne {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #edf1ee;
+}
+.document-ligne:last-child {
+  border-bottom: 0;
+}
+.document-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.7rem;
+  background-color: #fdf0ec;
+  color: var(--cm-accent-dark);
+  font-size: 1.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burger,
+  .burger span,
+  .navbar-cm .menu-cm,
+  .photo-profil-bouton {
+    transition: none;
+  }
+  .enregistreur-point {
+    animation: none;
   }
 }

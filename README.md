@@ -52,6 +52,12 @@ mariadb --force -u root -p covoitmay < database/tests-regles.sql
 
 Chaque essai interdit affiche une erreur qui cite sa règle, par exemple « (RG05.3) ». La base n'est pas modifiée.
 
+**Base déjà créée avec une version précédente du script :** appliquer les migrations du dossier `database/migrations`, dans l'ordre, sans rien perdre :
+
+```
+mariadb -u root -p covoitmay < database/migrations/2026-10-medias.sql
+```
+
 ## 2. Lancer l'API
 
 ```
@@ -62,6 +68,8 @@ npm run dev
 ```
 
 L'API répond sur http://localhost:3000/api. Pour vérifier qu'elle tourne : `GET /api/sante`.
+
+**Médias (photos de profil, photos et vocaux de la messagerie).** Sans configuration, ils sont rangés dans `backend/uploads/medias` (non versionné). En production, ils vont dans un bucket **privé** Backblaze B2 : remplir `B2_S3_ENDPOINT`, `B2_BUCKET_MEDIAS`, `B2_KEY_ID` et `B2_APPLICATION_KEY` dans `.env`. Pour vérifier la connexion au stockage : `npm run test:stockage`.
 
 ## 3. Lancer le frontend
 
@@ -76,6 +84,27 @@ Le site s'ouvre sur http://localhost:5173. Toutes ses données viennent de l'API
 Vite relaie les appels `/api` vers `http://localhost:3000` (voir `frontend/vite.config.ts`) : le navigateur ne parle qu'à une seule adresse. Pour une autre adresse d'API en production, définir `VITE_API_URL` au moment du build.
 
 La connexion renvoie un jeton (JWT) gardé dans le navigateur et envoyé à chaque requête. Si le serveur le refuse (session expirée, compte suspendu…), le site déconnecte la personne et explique pourquoi.
+
+## Mettre à jour l'API en production (alwaysdata)
+
+Sur le PC (PowerShell, dossier du projet) :
+
+```
+tar -czf backend.tgz --exclude=node_modules --exclude=.env --exclude=uploads backend
+scp backend.tgz mourad@ssh-mourad.alwaysdata.net:~/
+```
+
+Sur le serveur (`ssh mourad@ssh-mourad.alwaysdata.net`) :
+
+```
+find ~/covoitmay/backend -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
+tar -xzf ~/backend.tgz -C ~/covoitmay --no-overwrite-dir --delay-directory-restore
+find ~/covoitmay/backend -type d -not -path "*/node_modules/*" -exec chmod 755 {} +
+cd ~/covoitmay/backend && npm ci --omit=dev
+```
+
+Puis appliquer les éventuelles nouvelles migrations (`database/migrations`) et cliquer sur « Redémarrer » dans le panneau alwaysdata (Web → Sites).
+Les `chmod` sont indispensables : une archive créée sous Windows enregistre les dossiers sans le droit « x », et Linux refuserait d'y écrire les nouveaux fichiers. `.env` et `uploads/` ne sont jamais écrasés : ils ne sont pas dans l'archive.
 
 ## Comptes de démonstration
 
@@ -105,12 +134,19 @@ Valables en local et en ligne, sauf le mot de passe administrateur : `admin1234`
 | POST | `/api/demandes-conducteur` (multipart : véhicule + 2 fichiers) | membre |
 | GET | `/api/messages`, `/api/alertes`, `/api/favoris` | membre |
 | GET | `/api/admin/tableau-de-bord`, `/api/paiements`, `/api/admin/journal` | administrateur |
+| PUT, DELETE | `/api/utilisateurs/moi/photo` (multipart : champ `photo`) | membre |
+| GET | `/api/utilisateurs/:id/photo` | public |
+| POST | `/api/messages/fichier` (multipart : `fichier`, `idDestinataire`, `dureeSecondes` pour un vocal) | membre |
+| GET | `/api/messages/:id/fichier` | les 2 participants |
+| GET | `/api/documents/recus/:idReservation` (PDF) | passager de la réservation, administrateur |
+| GET | `/api/documents/releves/:mois` (PDF, ex. `2026-09`) | membre |
+| GET | `/api/documents/admin/activite/:mois`, `…/transactions/:mois`, `…/journal/:mois` (PDF) | administrateur |
 
 Les routes protégées attendent l'en-tête `Authorization: Bearer <jeton>`, où le jeton est renvoyé par la connexion.
 
 ## Règles de gestion
 
-Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.2.docx`, partie 4 : RG01 à RG13, soit 125 règles.
+Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.3.docx`, partie 4 : RG01 à RG13, soit 125 règles.
 
 Chaque règle est vérifiée à au moins un niveau : base de données (contraintes et triggers), API (middlewares et services) ou interface.
 ---------------------------------------------------------------------------------------------------------

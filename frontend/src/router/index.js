@@ -36,6 +36,7 @@ import AdminUsers from '../views/admin/AdminUsers.vue'
 import AdminModeration from '../views/admin/AdminModeration.vue'
 import AdminDisputes from '../views/admin/AdminDisputes.vue'
 import AdminTransactions from '../views/admin/AdminTransactions.vue'
+import AdminDocuments from '../views/admin/AdminDocuments.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
 import InfoView from '../views/InfoView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
@@ -213,6 +214,12 @@ const routes = [
         name: 'admin-transactions',
         component: AdminTransactions,
         meta: { titre: 'Transactions' }
+      },
+      {
+        path: 'documents',
+        name: 'admin-documents',
+        component: AdminDocuments,
+        meta: { titre: 'Documents' }
       }
     ]
   },

@@ -4,19 +4,27 @@
 // ------------------------------------------------------------
 // Elle change selon si on est connecté ou pas :
 // - pas connecté  -> boutons "Connexion" et "Inscription"
-// - connecté      -> icône messagerie + menu avec l'avatar
+// - connecté      -> alertes, messagerie + menu avec l'avatar
+// Sur mobile et tablette, un bouton « burger » ouvre un panneau :
+// la carte du membre, puis les liens en lignes avec leurs icônes.
+// Le panneau est géré par Vue (menuOuvert) : il se ferme tout seul
+// quand on change de page ou qu'on appuie sur Échap.
 // ============================================================
 import { useAuthStore } from "../stores/auth";
 import { useDataStore } from "../stores/data";
-import { initials } from "../utils/format";
+import AvatarMembre from "./AvatarMembre.vue";
 
 export default {
   name: "NavBar",
+
+  components: { AvatarMembre },
 
   data() {
     return {
       // Vrai tant que la page n'a pas défilé vers le bas
       enHautDePage: true,
+      // Panneau du menu mobile ouvert ?
+      menuOuvert: false,
     };
   },
 
@@ -24,7 +32,7 @@ export default {
     // Sur l'accueil, tant qu'on est en haut de la page, la barre prend
     // la couleur du hero : les deux ne forment qu'un seul bloc.
     surLeHero() {
-      return this.$route.name === "home" && this.enHautDePage;
+      return this.$route.name === "home" && this.enHautDePage && !this.menuOuvert;
     },
     // Le store d'authentification (qui est connecté ?)
     auth() {
@@ -63,22 +71,25 @@ export default {
       if (!this.auth.estConnecte) return { name: "home" };
       return this.auth.destinationApresConnexion();
     },
-    // Les initiales de l'utilisateur (ex: "Rachida A." -> "RA")
-    initialesUtilisateur() {
-      return initials(this.auth.utilisateur);
+  },
+
+  watch: {
+    // Nouvelle page : le menu mobile se referme
+    $route() {
+      this.menuOuvert = false;
     },
   },
 
-  // On écoute le défilement de la page (et on arrête en quittant)
+  // On écoute le défilement de la page et la touche Échap (et on arrête en quittant)
   mounted() {
-    window.addEventListener("scroll", this.verifierDefilement, {
-      passive: true,
-    });
+    window.addEventListener("scroll", this.verifierDefilement, { passive: true });
+    window.addEventListener("keydown", this.surTouche);
     this.verifierDefilement();
   },
 
   beforeUnmount() {
     window.removeEventListener("scroll", this.verifierDefilement);
+    window.removeEventListener("keydown", this.surTouche);
   },
 
   methods: {
@@ -86,8 +97,16 @@ export default {
       this.enHautDePage = window.scrollY < 10;
     },
 
+    surTouche(evenement) {
+      if (evenement.key === "Escape" && this.menuOuvert) {
+        this.menuOuvert = false;
+        this.$refs.burger.focus();
+      }
+    },
+
     // Se déconnecter puis revenir à l'accueil
     seDeconnecter() {
+      this.menuOuvert = false;
       this.auth.seDeconnecter();
       this.data.viderCompteurs();
       this.$router.push({ name: "home" });
@@ -100,7 +119,7 @@ export default {
   <nav
     id="main-navbar"
     class="navbar navbar-expand-lg navbar-cm sticky-top"
-    :class="{ 'navbar-sur-hero': surLeHero }"
+    :class="{ 'navbar-sur-hero': surLeHero, 'menu-est-ouvert': menuOuvert }"
   >
     <div class="container">
       <!-- Logo du site -->
@@ -109,143 +128,153 @@ export default {
         Covoit'<span class="accent">May</span>
       </router-link>
 
-      <!-- Bouton "hamburger" affiché sur mobile -->
+      <!-- Bouton « burger » (mobile et tablette) : 3 traits qui deviennent une croix -->
       <button
-        class="navbar-toggler"
+        ref="burger"
+        class="burger d-lg-none"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navMenu"
         aria-controls="navMenu"
-        aria-expanded="false"
-        aria-label="Ouvrir le menu"
+        :aria-expanded="menuOuvert ? 'true' : 'false'"
+        :aria-label="menuOuvert ? 'Fermer le menu' : 'Ouvrir le menu'"
+        @click="menuOuvert = !menuOuvert"
       >
-        <span class="navbar-toggler-icon"></span>
+        <span></span><span></span><span></span>
+        <!-- Rappel discret : des messages ou des alertes attendent -->
+        <i v-if="!menuOuvert && nonLus + alertesNonLues > 0" class="burger-pastille" aria-hidden="true"></i>
       </button>
 
-      <div id="navMenu" class="collapse navbar-collapse">
-        <!-- Liens principaux (à gauche) -->
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'search' }">
-              <i class="bi bi-search me-1"></i>Rechercher un trajet
-            </router-link>
-          </li>
-          <li v-if="auth.peutPublier" class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'publish' }">
-              <i class="bi bi-plus-circle me-1"></i>Publier un trajet
-            </router-link>
-          </li>
-          <li v-if="auth.peutReserver" class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'my-bookings' }">
-              <i class="bi bi-ticket-perforated me-1"></i>Mes réservations
-            </router-link>
-          </li>
-          <li v-if="auth.estConducteurEnAttente" class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'my-profile', hash: '#devenir-conducteur' }">
-              <i class="bi bi-hourglass-split me-1"></i>Vérification d'identité
-            </router-link>
-          </li>
-          <li v-if="auth.estConducteur" class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'my-trips' }">
-              <i class="bi bi-signpost-2 me-1"></i>Mes trajets
-            </router-link>
-          </li>
-          <li v-if="auth.peutAdministrer" class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'admin-dashboard' }">
-              <i class="bi bi-speedometer2 me-1"></i>Administration
-            </router-link>
-          </li>
-        </ul>
-
-        <!-- Si PAS connecté : boutons Connexion / Inscription -->
-        <div v-if="!auth.estConnecte" class="d-flex gap-2">
-          <router-link class="btn btn-outline-cm" :to="{ name: 'login' }"
-            >Connexion</router-link
+      <div id="navMenu" class="navbar-collapse menu-cm" :class="{ ouvert: menuOuvert }">
+        <div class="menu-panneau">
+          <!-- Mobile : la carte du membre connecté -->
+          <router-link
+            v-if="auth.estConnecte"
+            class="menu-profil d-lg-none"
+            :to="{ name: 'my-profile' }"
           >
-          <router-link class="btn btn-cm-primary" :to="{ name: 'register' }"
-            >Inscription</router-link
-          >
-        </div>
-
-        <!-- Si connecté : messagerie + menu utilisateur -->
-        <ul v-else class="navbar-nav align-items-lg-center">
-          <li v-if="auth.peutEchanger" class="nav-item me-lg-2">
-            <router-link
-              class="nav-link position-relative"
-              :to="{ name: 'my-alerts' }"
-              title="Mes alertes"
-              aria-label="Mes alertes"
-            >
-              <i class="bi bi-bell fs-5"></i>
-              <span
-                v-if="alertesNonLues > 0"
-                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger badge-pulse"
-                style="font-size: 0.6rem"
-                >{{ alertesNonLues
-                }}<span class="visually-hidden"> alertes actives</span></span
-              >
-            </router-link>
-          </li>
-          <li v-if="auth.peutEchanger" class="nav-item me-lg-2">
-            <router-link
-              class="nav-link position-relative"
-              :to="{ name: 'messages' }"
-              title="Messagerie"
-              aria-label="Messagerie"
-            >
-              <i class="bi bi-chat-dots fs-5"></i>
-              <!-- Pastille rouge avec le nombre de messages non lus -->
-              <span
-                v-if="nonLus > 0"
-                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger badge-pulse"
-                style="font-size: 0.6rem"
-                >{{ nonLus
-                }}<span class="visually-hidden"> messages non lus</span></span
-              >
-            </router-link>
-          </li>
-          <li class="nav-item me-lg-2">
-            <span class="user-status-badge" :class="classeStatutUtilisateur">
-              {{ statutUtilisateur }}
+            <AvatarMembre :personne="auth.utilisateur" taille="lg" />
+            <span class="menu-profil-texte">
+              <span class="menu-profil-nom">{{ auth.utilisateur.prenom }} {{ auth.utilisateur.nom }}</span>
+              <span class="user-status-badge" :class="classeStatutUtilisateur">{{ statutUtilisateur }}</span>
             </span>
-          </li>
-          <li class="nav-item dropdown">
-            <a
-              id="user-menu"
-              class="nav-link dropdown-toggle d-flex align-items-center gap-2"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <span class="avatar avatar-sm">{{ initialesUtilisateur }}</span>
-              <span class="d-lg-none d-xl-inline">{{
-                auth.utilisateur.prenom
-              }}</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li>
-                <router-link class="dropdown-item" :to="{ name: 'my-profile' }">
-                  <i class="bi bi-person me-2"></i>Mon profil
-                </router-link>
-              </li>
-              <li v-if="auth.peutEchanger">
-                <router-link class="dropdown-item" :to="{ name: 'my-alerts' }">
-                  <i class="bi bi-bell me-2"></i>Mes alertes
-                </router-link>
-              </li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <button
-                  class="dropdown-item text-danger"
-                  @click="seDeconnecter"
-                >
-                  <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
-                </button>
-              </li>
-            </ul>
-          </li>
-        </ul>
+            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+          </router-link>
+
+          <!-- Liens principaux (à gauche sur ordinateur) -->
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'search' }">
+                <i class="bi bi-search"></i>Rechercher un trajet
+              </router-link>
+            </li>
+            <li v-if="auth.peutPublier" class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'publish' }">
+                <i class="bi bi-plus-circle"></i>Publier un trajet
+              </router-link>
+            </li>
+            <li v-if="auth.peutReserver" class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'my-bookings' }">
+                <i class="bi bi-ticket-perforated"></i>Mes réservations
+              </router-link>
+            </li>
+            <li v-if="auth.estConducteurEnAttente" class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'my-profile', hash: '#devenir-conducteur' }">
+                <i class="bi bi-hourglass-split"></i>Vérification d'identité
+              </router-link>
+            </li>
+            <li v-if="auth.estConducteur" class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'my-trips' }">
+                <i class="bi bi-signpost-2"></i>Mes trajets
+              </router-link>
+            </li>
+            <li v-if="auth.peutAdministrer" class="nav-item">
+              <router-link class="nav-link" :to="{ name: 'admin-dashboard' }">
+                <i class="bi bi-speedometer2"></i>Administration
+              </router-link>
+            </li>
+          </ul>
+
+          <!-- Si PAS connecté : boutons Connexion / Inscription -->
+          <div v-if="!auth.estConnecte" class="menu-boutons">
+            <router-link class="btn btn-outline-cm" :to="{ name: 'login' }">Connexion</router-link>
+            <router-link class="btn btn-cm-primary" :to="{ name: 'register' }">Inscription</router-link>
+          </div>
+
+          <!-- Si connecté : alertes, messagerie, statut et menu utilisateur -->
+          <ul v-else class="navbar-nav align-items-lg-center menu-droite">
+            <li v-if="auth.peutEchanger" class="nav-item me-lg-2">
+              <router-link
+                class="nav-link nav-icone position-relative"
+                :to="{ name: 'my-alerts' }"
+                title="Mes alertes"
+              >
+                <i class="bi bi-bell"></i><span class="d-lg-none">Mes alertes</span>
+                <span v-if="alertesNonLues > 0" class="badge rounded-pill bg-danger badge-pulse menu-compteur">
+                  {{ alertesNonLues }}<span class="visually-hidden"> alertes actives</span>
+                </span>
+                <span class="visually-hidden d-none d-lg-inline">Mes alertes</span>
+              </router-link>
+            </li>
+            <li v-if="auth.peutEchanger" class="nav-item me-lg-2">
+              <router-link
+                class="nav-link nav-icone position-relative"
+                :to="{ name: 'messages' }"
+                title="Messagerie"
+              >
+                <i class="bi bi-chat-dots"></i><span class="d-lg-none">Messagerie</span>
+                <!-- Pastille rouge avec le nombre de messages non lus -->
+                <span v-if="nonLus > 0" class="badge rounded-pill bg-danger badge-pulse menu-compteur">
+                  {{ nonLus }}<span class="visually-hidden"> messages non lus</span>
+                </span>
+                <span class="visually-hidden d-none d-lg-inline">Messagerie</span>
+              </router-link>
+            </li>
+
+            <!-- Ordinateur : statut et menu déroulant de l'avatar -->
+            <li class="nav-item me-lg-2 d-none d-lg-block">
+              <span class="user-status-badge" :class="classeStatutUtilisateur">
+                {{ statutUtilisateur }}
+              </span>
+            </li>
+            <li class="nav-item dropdown d-none d-lg-block">
+              <a
+                id="user-menu"
+                class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <AvatarMembre :personne="auth.utilisateur" taille="sm" />
+                <span class="d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'my-profile' }">
+                    <i class="bi bi-person me-2"></i>Mon profil
+                  </router-link>
+                </li>
+                <li v-if="auth.peutEchanger">
+                  <router-link class="dropdown-item" :to="{ name: 'my-alerts' }">
+                    <i class="bi bi-bell me-2"></i>Mes alertes
+                  </router-link>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button class="dropdown-item text-danger" @click="seDeconnecter">
+                    <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Mobile : déconnexion en bas du panneau -->
+            <li class="nav-item d-lg-none menu-separateur">
+              <button class="nav-link menu-deconnexion" type="button" @click="seDeconnecter">
+                <i class="bi bi-box-arrow-right"></i>Déconnexion
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </nav>

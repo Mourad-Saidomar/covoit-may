@@ -267,7 +267,9 @@ export default {
 
 <template>
   <figure class="hero-carte">
-    <div class="hero-carte-cadre">
+    <!-- Le cadre garde les proportions du dessin : les noms, placés
+         en %, restent sur leurs villages quelle que soit la taille -->
+    <div class="hero-carte-cadre" :style="{ aspectRatio: largeur + ' / ' + hauteur }">
       <svg
         class="hero-carte-dessin"
         :viewBox="'0 0 ' + largeur + ' ' + hauteur"

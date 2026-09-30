@@ -32,6 +32,8 @@ import alerteRoutes from './routes/alerte.routes.js'
 import favoriRoutes from './routes/favori.routes.js'
 import adminRoutes from './routes/admin.routes.js'
 import parametreRoutes from './routes/parametre.routes.js'
+import documentRoutes from './routes/document.routes.js'
+import { MODE as MODE_STOCKAGE } from './services/stockageService.js'
 import { cloturerTrajetsPasses } from './models/trajetModel.js'
 import { purgerJustificatifs } from './services/demandeConducteurService.js'
 
@@ -64,7 +66,8 @@ if (process.env.TRUST_PROXY) {
 
 // ---------- Sécurité HTTP (RG13.7) ----------
 app.use(helmet())                                   // en-têtes de sécurité
-app.use(cors({ origin: FRONTEND_URL.split(',') }))  // seul le frontend peut appeler l'API
+// Seul le frontend peut appeler l'API. Il peut lire le nom des PDF téléchargés.
+app.use(cors({ origin: FRONTEND_URL.split(','), exposedHeaders: ['Content-Disposition'] }))
 app.use(express.json({ limit: '100kb' }))           // corps JSON limité (RG13.11)
 app.use(requestLogger)
 app.use('/api', limiteurApi)                        // RG13.6
@@ -88,6 +91,7 @@ app.use('/api/litiges', litigeRoutes)
 app.use('/api/alertes', alerteRoutes)
 app.use('/api/favoris', favoriRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/documents', documentRoutes)
 
 // ---------- Fin de chaîne ----------
 app.use(notFound)
@@ -117,7 +121,7 @@ async function demarrer() {
   setInterval(() => lancerTache('justificatifs', purgerJustificatifs), 24 * 60 * 60 * 1000)
 
   const pret = function () {
-    console.log(`API Covoit'May prête sur le port ${PORT} (/api)`)
+    console.log(`API Covoit'May prête sur le port ${PORT} (/api), stockage des médias : ${MODE_STOCKAGE === 'b2' ? 'Backblaze B2' : 'dossier local'}`)
   }
   if (HOTE) app.listen(PORT, HOTE, pret)
   else app.listen(PORT, pret)

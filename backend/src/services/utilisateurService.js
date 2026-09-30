@@ -13,6 +13,7 @@ import * as alerteModel from '../models/alerteModel.js'
 import * as favoriModel from '../models/favoriModel.js'
 import * as demandeModel from '../models/demandeConducteurModel.js'
 import * as journalModel from '../models/journalModel.js'
+import * as stockage from './stockageService.js'
 
 // Profil public : prénom, initiale, note… jamais email ni téléphone (RG02.15)
 export async function profilPublic(id) {
@@ -31,6 +32,39 @@ export async function monProfil(id) {
 export async function modifierProfil(id, champs) {
   await utilisateurModel.modifierProfil(id, champs)
   return monProfil(id)
+}
+
+// ---------- Photo de profil (RG02.19) ----------
+
+// Nouvelle photo : elle est enregistrée, puis l'ancienne est effacée
+export async function changerPhoto(id, fichier) {
+  const cle = stockage.nouvelleCle(`photos/${id}`, fichier.extension)
+  await stockage.enregistrer(cle, fichier.contenu, fichier.type)
+  const avant = await utilisateurModel.lirePhoto(id)
+  await utilisateurModel.modifierPhoto(id, cle)
+  if (avant && avant.photo) await stockage.supprimerSansErreur(avant.photo)
+  return monProfil(id)
+}
+
+export async function supprimerPhoto(id) {
+  const avant = await utilisateurModel.lirePhoto(id)
+  if (avant && avant.photo) {
+    await utilisateurModel.modifierPhoto(id, null)
+    await stockage.supprimerSansErreur(avant.photo)
+  }
+  return monProfil(id)
+}
+
+// Photo visible de tous, comme le profil public, tant que le compte
+// est actif (ou conducteur en attente de vérification)
+export async function photoPublique(id) {
+  const ligne = await utilisateurModel.lirePhoto(id)
+  if (!ligne || !ligne.photo || !['actif', 'en_attente'].includes(ligne.statut_compte)) {
+    throw new ErreurApi(404, 'Pas de photo de profil.')
+  }
+  const fichier = await stockage.lire(ligne.photo)
+  if (!fichier) throw new ErreurApi(404, 'Pas de photo de profil.')
+  return fichier
 }
 
 export async function changerMotDePasse(id, ancien, nouveau) {
@@ -52,6 +86,7 @@ export async function supprimerMonCompte(id, motDePasse) {
   if (await demandeModel.aUneDemandeEnAttente(id)) {
     throw new ErreurApi(409, 'Votre demande conducteur est en cours d’examen : attendez la décision avant de supprimer votre compte.')
   }
+  const avant = await utilisateurModel.lirePhoto(id)
   await transaction(async function (cx) {
     // Mes trajets ouverts : annulés, passagers remboursés
     const trajets = await trajetModel.listerOuvertsDuConducteur(id, cx)
@@ -65,6 +100,8 @@ export async function supprimerMonCompte(id, motDePasse) {
     await favoriModel.supprimerTous(id, cx)
     await utilisateurModel.anonymiser(id, cx)
   })
+  // La photo fait partie des données personnelles effacées (RG02.19)
+  if (avant && avant.photo) await stockage.supprimerSansErreur(avant.photo)
 }
 
 // ---------- Administrateur ----------

@@ -6,14 +6,15 @@
 // et les demandes de réservation à accepter ou refuser.
 // ============================================================
 import { useDataStore } from '../stores/data'
-import { formatDateTime, formatPrice, initials, messageErreur, STATUT_RESERVATION, STATUT_TRAJET } from '../utils/format'
+import { formatDateTime, formatPrice, messageErreur, STATUT_RESERVATION, STATUT_TRAJET } from '../utils/format'
 import SqueletteTrajet from '../components/SqueletteTrajet.vue'
+import AvatarMembre from '../components/AvatarMembre.vue'
 import { revelerApresChargement } from '../utils/chargement'
 
 export default {
   name: 'MyTripsView',
 
-  components: { SqueletteTrajet },
+  components: { SqueletteTrajet, AvatarMembre },
 
   // Squelettes, puis les trajets
   mounted() {
@@ -55,7 +56,6 @@ export default {
   },
 
   methods: {
-    initials,
     formatDateTime,
     formatPrice,
 
@@ -194,7 +194,7 @@ export default {
           </h2>
           <div v-for="r in t.demandes" :key="r.id"
             class="d-flex align-items-center gap-2 py-2 border-bottom flex-wrap">
-            <span class="avatar avatar-sm">{{ initials(passagerDe(r)) }}</span>
+            <AvatarMembre :personne="passagerDe(r)" taille="sm" />
             <div class="flex-grow-1">
               <router-link :to="{ name: 'public-profile', params: { id: r.passagerId } }"
                 class="small fw-semibold text-decoration-none">

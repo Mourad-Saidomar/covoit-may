@@ -4,6 +4,8 @@
 // Totaux (encaissé, commission, reversé, remboursé) puis la
 // liste des paiements, tels qu'enregistrés dans la base.
 // Aucune donnée de carte bancaire n'est stockée (RG06.6).
+// Chaque ligne donne accès au reçu PDF du paiement ; les relevés
+// mensuels sont dans « Documents ».
 // ============================================================
 import { ref, onMounted } from "vue";
 import { useDataStore } from "@/stores/data";
@@ -15,6 +17,19 @@ const chargement = ref(true);
 const erreur = ref("");
 const transactions = ref([]);
 const totals = ref({ encaisse: 0, commission: 0, reverseAuxConducteurs: 0, rembourse: 0 });
+const recuEnCours = ref(null);
+
+async function telechargerRecu(t) {
+  erreur.value = "";
+  recuEnCours.value = t.id;
+  try {
+    await data.telechargerRecu(t.reservationId);
+  } catch (e) {
+    erreur.value = messageErreur(e);
+  } finally {
+    recuEnCours.value = null;
+  }
+}
 
 onMounted(async () => {
   try {
@@ -33,7 +48,10 @@ onMounted(async () => {
   <div id="admin-transactions-page">
     <header class="admin-entete">
       <h1>Transactions</h1>
-      <p>Paiements des réservations (paiement en ligne simulé dans cette démo).</p>
+      <p>
+        Paiements des réservations (paiement en ligne simulé dans cette démo).
+        Relevé mensuel en PDF : <router-link :to="{ name: 'admin-documents' }">Documents</router-link>.
+      </p>
     </header>
 
     <div v-if="erreur" class="alert alert-danger py-2" role="alert">{{ erreur }}</div>
@@ -76,6 +94,7 @@ onMounted(async () => {
               <th class="nombre">Commission</th>
               <th>Statut</th>
               <th>Encaissé le</th>
+              <th><span class="visually-hidden">Reçu</span></th>
             </tr>
           </thead>
           <tbody>
@@ -91,6 +110,14 @@ onMounted(async () => {
               </td>
               <td class="text-muted small">
                 {{ t.datePaiement ? formatDateTime(t.datePaiement) : "—" }}
+              </td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="recuEnCours === t.id"
+                  :title="'Reçu ' + t.reference" :aria-label="'Télécharger le reçu ' + t.reference"
+                  @click="telechargerRecu(t)">
+                  <span v-if="recuEnCours === t.id" class="spinner-border spinner-border-sm"></span>
+                  <i v-else class="bi bi-file-earmark-pdf"></i>
+                </button>
               </td>
             </tr>
           </tbody>

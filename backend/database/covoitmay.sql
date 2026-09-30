@@ -78,6 +78,7 @@ CREATE TABLE utilisateur (
   commune             VARCHAR(60) DEFAULT NULL,
   date_naissance      DATE DEFAULT NULL,
   bio                 VARCHAR(500) DEFAULT NULL,
+  photo               VARCHAR(255) DEFAULT NULL,  -- clé de la photo de profil dans le stockage (RG02.19)
   role                ENUM('passager','conducteur') NOT NULL DEFAULT 'passager',        -- RG02.2
   statut_verification TINYINT(1) NOT NULL DEFAULT 0,
   statut_compte       ENUM('actif','en_attente','suspendu','refuse','supprime') NOT NULL DEFAULT 'actif',
@@ -108,7 +109,9 @@ CREATE TABLE utilisateur (
   -- Compte supprimé = données personnelles effacées (RG02.14)
   CONSTRAINT ck_util_suppression CHECK ((statut_compte = 'supprime') = (mot_de_passe IS NULL)
                                         AND (statut_compte <> 'supprime' OR (telephone IS NULL AND date_suppression IS NOT NULL))),
-  CONSTRAINT ck_util_telephone_obligatoire CHECK (statut_compte = 'supprime' OR telephone IS NOT NULL)
+  CONSTRAINT ck_util_telephone_obligatoire CHECK (statut_compte = 'supprime' OR telephone IS NOT NULL),
+  -- La photo d'un compte supprimé est effacée avec ses autres données (RG02.19)
+  CONSTRAINT ck_util_photo_suppression CHECK (statut_compte <> 'supprime' OR photo IS NULL)
 ) ENGINE=InnoDB;
 
 -- ---------- Véhicules ----------
@@ -305,7 +308,13 @@ CREATE TABLE avis (
 -- ---------- Messages ----------
 CREATE TABLE message (
   id_message      INT NOT NULL AUTO_INCREMENT,
-  contenu         VARCHAR(1000) NOT NULL,
+  -- Un message est un texte, une photo ou un message vocal (RG09.6)
+  type_message    ENUM('texte','image','vocal') NOT NULL DEFAULT 'texte',
+  contenu         VARCHAR(1000) NOT NULL DEFAULT '',
+  -- Photo ou vocal : clé du fichier dans le stockage, son type et sa durée
+  fichier         VARCHAR(255) DEFAULT NULL,
+  fichier_type    VARCHAR(50) DEFAULT NULL,
+  duree_secondes  SMALLINT UNSIGNED DEFAULT NULL,
   date_envoi      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   lu              TINYINT(1) NOT NULL DEFAULT 0,
   date_lecture    DATETIME DEFAULT NULL,
@@ -316,7 +325,12 @@ CREATE TABLE message (
   KEY idx_message_non_lus (id_destinataire, lu),
   CONSTRAINT fk_message_expediteur FOREIGN KEY (id_expediteur) REFERENCES utilisateur (id_utilisateur),
   CONSTRAINT fk_message_destinataire FOREIGN KEY (id_destinataire) REFERENCES utilisateur (id_utilisateur),
-  CONSTRAINT ck_message_contenu CHECK (CHAR_LENGTH(TRIM(contenu)) > 0),                                  -- RG09.2
+  -- Un texte n'est jamais vide et n'a pas de fichier ; une photo ou un vocal a toujours son fichier (RG09.2, RG09.6)
+  CONSTRAINT ck_message_contenu CHECK ((type_message = 'texte' AND fichier IS NULL AND CHAR_LENGTH(TRIM(contenu)) > 0)
+                                       OR (type_message <> 'texte' AND fichier IS NOT NULL AND fichier_type IS NOT NULL)),
+  -- Un vocal dure de 1 seconde à 2 minutes ; seul un vocal a une durée (RG09.7)
+  CONSTRAINT ck_message_duree CHECK ((type_message = 'vocal' AND duree_secondes BETWEEN 1 AND 120)
+                                     OR (type_message <> 'vocal' AND duree_secondes IS NULL)),
   CONSTRAINT ck_message_personnes CHECK (id_expediteur <> id_destinataire)                               -- RG09.1
 ) ENGINE=InnoDB;
 
@@ -934,7 +948,8 @@ END$$
 CREATE TRIGGER trg_message_avant_modification BEFORE UPDATE ON message FOR EACH ROW
 BEGIN
   IF NEW.contenu <> OLD.contenu OR NEW.id_expediteur <> OLD.id_expediteur
-     OR NEW.id_destinataire <> OLD.id_destinataire OR NEW.date_envoi <> OLD.date_envoi THEN
+     OR NEW.id_destinataire <> OLD.id_destinataire OR NEW.date_envoi <> OLD.date_envoi
+     OR NEW.type_message <> OLD.type_message OR NOT (NEW.fichier <=> OLD.fichier) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message envoyé ne peut plus être modifié (RG09.3).';
   END IF;
   IF NEW.lu = 1 AND OLD.lu = 0 THEN
@@ -1081,6 +1096,7 @@ SELECT u.id_utilisateur,
        CONCAT(LEFT(u.nom, 1), '.') AS nom_initiale,
        u.commune,
        u.bio,
+       u.photo,
        u.role,
        u.statut_verification,
        u.note_moyenne,
@@ -1103,7 +1119,7 @@ SELECT t.id_trajet, t.lieu_depart, t.lieu_arrivee, t.point_rdv,
        t.id_utilisateur AS id_conducteur,
        p.prenom AS conducteur_prenom, p.nom_initiale AS conducteur_nom,
        p.note_moyenne AS conducteur_note, p.nb_avis AS conducteur_nb_avis,
-       p.statut_verification AS conducteur_verifie,
+       p.statut_verification AS conducteur_verifie, p.photo AS conducteur_photo,
        CONCAT_WS(' ', v.marque, v.modele, v.couleur) AS vehicule
   FROM trajet t
   JOIN v_profil_public p ON p.id_utilisateur = t.id_utilisateur

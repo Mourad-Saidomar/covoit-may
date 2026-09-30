@@ -10,7 +10,12 @@
 // variable VITE_API_URL.
 // ============================================================
 
-const URL_API = import.meta.env.VITE_API_URL || '/api'
+export const URL_API = import.meta.env.VITE_API_URL || '/api'
+
+// Adresse complète d'un média renvoyé par l'API (ex. « /utilisateurs/4/photo?v=… »)
+export function urlMedia(chemin) {
+  return chemin ? URL_API + chemin : null
+}
 
 // Erreur renvoyée par l'API : statut HTTP + message en français
 export class ErreurApi extends Error {
@@ -95,17 +100,44 @@ export const remplacer = (chemin, corps) => api(chemin, { methode: 'PUT', corps 
 export const modifier = (chemin, corps) => api(chemin, { methode: 'PATCH', corps })
 export const supprimer = (chemin, corps) => api(chemin, { methode: 'DELETE', corps })
 
-// Télécharge un fichier protégé (justificatif) et l'ouvre dans un nouvel onglet.
-// Un simple lien ne marcherait pas : il faut envoyer le jeton.
-export async function ouvrirFichier(chemin) {
-  const reponse = await fetch(URL_API + chemin, { headers: { Authorization: 'Bearer ' + jeton } })
+// Lit un fichier protégé (justificatif, PDF, photo ou vocal d'un message).
+// Une simple balise <img src> ou un lien ne marcheraient pas : il faut
+// envoyer le jeton. Renvoie le fichier (Blob) et la réponse.
+export async function lireFichier(chemin) {
+  let reponse
+  try {
+    reponse = await fetch(URL_API + chemin, { headers: jeton ? { Authorization: 'Bearer ' + jeton } : {} })
+  } catch {
+    throw new ErreurApi(0, 'Le serveur ne répond pas.')
+  }
   if (!reponse.ok) {
     let message = 'Fichier indisponible.'
     try { message = (await reponse.json()).erreur || message } catch { /* réponse vide */ }
+    if (reponse.status === 401 && jeton && quandSessionFermee) quandSessionFermee(message)
     throw new ErreurApi(reponse.status, message)
   }
-  const fichier = await reponse.blob()
+  return { fichier: await reponse.blob(), reponse }
+}
+
+// Ouvre un fichier protégé (justificatif) dans un nouvel onglet
+export async function ouvrirFichier(chemin) {
+  const { fichier } = await lireFichier(chemin)
   const lien = URL.createObjectURL(fichier)
   window.open(lien, '_blank', 'noopener')
+  setTimeout(() => URL.revokeObjectURL(lien), 60000)
+}
+
+// Télécharge un document (PDF) sous le nom donné par le serveur
+export async function telechargerFichier(chemin, nomParDefaut = 'document.pdf') {
+  const { fichier, reponse } = await lireFichier(chemin)
+  const entete = reponse.headers.get('Content-Disposition') || ''
+  const nom = (entete.match(/filename="([^"]+)"/) || [])[1] || nomParDefaut
+  const lien = URL.createObjectURL(fichier)
+  const a = document.createElement('a')
+  a.href = lien
+  a.download = nom
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
   setTimeout(() => URL.revokeObjectURL(lien), 60000)
 }

@@ -60,6 +60,9 @@ const litigesOuverts = computed(() => data.aTraiter.litiges);
       <router-link class="admin-menu-lien" :to="{ name: 'admin-transactions' }">
         <i class="bi bi-credit-card"></i>Transactions
       </router-link>
+      <router-link class="admin-menu-lien" :to="{ name: 'admin-documents' }">
+        <i class="bi bi-file-earmark-pdf"></i>Documents
+      </router-link>
     </nav>
 
     <div class="admin-contenu">

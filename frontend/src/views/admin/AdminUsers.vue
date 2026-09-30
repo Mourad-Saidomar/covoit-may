@@ -11,7 +11,8 @@
 // ============================================================
 import { ref, watch, onMounted } from "vue";
 import { useDataStore } from "@/stores/data";
-import { initials, formatDate, messageErreur } from "@/utils/format";
+import { formatDate, messageErreur } from "@/utils/format";
+import AvatarMembre from "@/components/AvatarMembre.vue";
 import { LIBELLES_ROLES } from "@/stores/auth";
 import StarRating from "@/components/StarRating.vue";
 import DemandesConducteur from "@/components/admin/DemandesConducteur.vue";
@@ -154,7 +155,7 @@ const STATUTS = {
             <tr v-for="u in utilisateurs" :key="u.id">
               <td>
                 <div class="d-flex align-items-center gap-2">
-                  <span class="avatar avatar-sm">{{ initials(u) }}</span>
+                  <AvatarMembre :personne="u" taille="sm" />
                   <div>
                     <div class="fw-semibold">
                       {{ u.prenom }} {{ u.nom }}

@@ -5,6 +5,7 @@
 // par les triggers de la base à chaque changement de statut.
 // ============================================================
 import { requete } from '../config/db.js'
+import { urlPhoto } from './utilisateurModel.js'
 
 export function versReservation(l) {
   const reservation = {
@@ -36,6 +37,7 @@ export function versReservation(l) {
         id: l.id_conducteur,
         prenom: l.conducteur_prenom,
         nom: l.conducteur_nom,
+        photo: urlPhoto(l.id_conducteur, l.conducteur_photo),
         // Le téléphone n'est donné qu'une fois la réservation confirmée (RG02.18)
         telephone: l.conducteur_telephone
       }
@@ -47,6 +49,7 @@ export function versReservation(l) {
       prenom: l.passager_prenom,
       nom: l.passager_nom,
       note: l.passager_note,
+      photo: urlPhoto(l.id_utilisateur, l.passager_photo),
       telephone: l.passager_telephone
     }
   }
@@ -77,7 +80,7 @@ export async function listerParPassager(idPassager) {
   return requete(
     `SELECT r.*, t.lieu_depart, t.lieu_arrivee, t.point_rdv, t.date_trajet, t.heure_depart, t.statut AS trajet_statut,
             t.id_utilisateur AS id_conducteur, u.prenom AS conducteur_prenom,
-            CONCAT(LEFT(u.nom, 1), '.') AS conducteur_nom,
+            CONCAT(LEFT(u.nom, 1), '.') AS conducteur_nom, u.photo AS conducteur_photo,
             IF(r.statut = 'confirmee', u.telephone, NULL) AS conducteur_telephone,
             p.statut AS paiement_statut, p.mode_paiement, p.reference,
             EXISTS (SELECT 1 FROM avis a WHERE a.id_trajet = r.id_trajet AND a.id_utilisateur = r.id_utilisateur) AS avis_depose
@@ -93,7 +96,7 @@ export async function listerParPassager(idPassager) {
 export async function listerParTrajet(idTrajet) {
   return requete(
     `SELECT r.*, u.prenom AS passager_prenom, CONCAT(LEFT(u.nom, 1), '.') AS passager_nom,
-            u.note_moyenne AS passager_note,
+            u.note_moyenne AS passager_note, u.photo AS passager_photo,
             IF(r.statut = 'confirmee', u.telephone, NULL) AS passager_telephone,
             p.statut AS paiement_statut, p.mode_paiement, p.reference
        FROM reservation r

@@ -6,12 +6,14 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node --env-file-if-exists=.env src/app.js",
-    "dev": "node --env-file-if-exists=.env --watch src/app.js"
+    "dev": "node --env-file-if-exists=.env --watch src/app.js",
+    "test:stockage": "node --env-file-if-exists=.env scripts/tester-stockage.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "aws4fetch": "^1.0.20",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -19,6 +21,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mariadb": "^3.5.4",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "pdfkit": "^0.20.2"
   }
 }
