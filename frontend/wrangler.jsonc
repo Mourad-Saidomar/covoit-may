@@ -1,34 +1,14 @@
 {
+  // Mise en ligne du front-end sur Cloudflare Workers (fichiers statiques).
+  // Le nom doit être celui du Worker créé dans le tableau de bord Cloudflare.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "covoitmay",
+  "name": "covoit-may",
   "compatibility_date": "2026-08-25",
-  "pages_build_output_dir": "./dist",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // }
+  "assets": {
+    // Site compilé par « npm run build »
+    "directory": "./dist",
+    // Application monopage : toute adresse inconnue (/recherche, /trajets/12…)
+    // renvoie index.html, et Vue Router affiche la bonne page.
+    "not_found_handling": "single-page-application"
+  }
 }
