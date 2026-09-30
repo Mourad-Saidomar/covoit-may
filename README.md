@@ -2,6 +2,11 @@
 
 Plateforme de covoiturage local pour Mayotte : projet fil rouge du titre professionnel DWWM.
 
+## En ligne
+
+- Site : https://covoit-may.mourad-saidomar-sio.workers.dev (Cloudflare Workers, republié à chaque push sur `main`)
+- API : https://mourad.alwaysdata.net/api (alwaysdata : Node.js et MariaDB), contrôle : `/api/sante`
+
 ## Organisation du projet
 
 ```
@@ -74,6 +79,8 @@ La connexion renvoie un jeton (JWT) gardé dans le navigateur et envoyé à chaq
 
 ## Comptes de démonstration
 
+Valables en local et en ligne, sauf le mot de passe administrateur : `admin1234` ne fonctionne qu'en local, il a été remplacé en production.
+
 | Rôle | Email | Mot de passe |
 |---|---|---|
 | Administrateur | admin@covoitmay.yt | admin1234 |
@@ -103,7 +110,7 @@ Les routes protégées attendent l'en-tête `Authorization: Bearer <jeton>`, où
 
 ## Règles de gestion
 
-Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.1.docx`, partie 4 : RG01 à RG13, soit 125 règles.
+Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.2.docx`, partie 4 : RG01 à RG13, soit 125 règles.
 
 Chaque règle est vérifiée à au moins un niveau : base de données (contraintes et triggers), API (middlewares et services) ou interface.
 ---------------------------------------------------------------------------------------------------------

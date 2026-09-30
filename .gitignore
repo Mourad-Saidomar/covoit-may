@@ -37,3 +37,4 @@ backend/uploads/
 
 # archive envoyée au serveur (mise en ligne)
 *.tgz
+infos_projet/
