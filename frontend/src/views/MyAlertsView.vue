@@ -56,6 +56,9 @@ async function charger() {
   } catch (e) {
     erreur.value = messageErreur(e);
   }
+  // La page est vue : la pastille « Mes alertes » s'efface (RG11.6).
+  // Les nouveautés restent signalées sur les alertes jusqu'à la prochaine visite.
+  data.marquerAlertesVues().catch(() => {});
   // Les nouvelles cartes doivent être révélées (animation au défilement)
   revelerApresChargement();
 }
@@ -217,6 +220,9 @@ function supprimerAlerte(alerte) {
             <div :class="{ 'opacity-50': !a.active }">
               <strong>{{ a.depart }} → {{ a.arrivee }}</strong>
               <span v-if="!a.active" class="badge bg-secondary ms-2">En pause</span>
+              <span v-else-if="a.nbNouveaux > 0" class="badge bg-danger ms-2">
+                {{ a.nbNouveaux }} nouveau{{ a.nbNouveaux > 1 ? 'x' : '' }}
+              </span>
               <div class="small text-muted">
                 Entre {{ a.heureMin }} et {{ a.heureMax }}
                 <template v-if="a.prixMax"> · max {{ formatPrice(a.prixMax) }}</template>

@@ -3,6 +3,7 @@
 // ============================================================
 import { ErreurApi } from '../middlewares/errorHandler.js'
 import * as alerteModel from '../models/alerteModel.js'
+import { envoyerA } from '../tempsReel.js'
 
 export async function mesAlertes(idUtilisateur) {
   const lignes = await alerteModel.listerParUtilisateur(idUtilisateur)
@@ -26,6 +27,19 @@ export async function changerEtat(idUtilisateur, id, active) {
   await monAlerte(idUtilisateur, id)
   await alerteModel.changerEtat(id, active)
   return mesAlertes(idUtilisateur)
+}
+
+// « Mes alertes » consultée : la pastille de la barre de navigation s'efface
+export async function marquerVues(idUtilisateur) {
+  await alerteModel.marquerVues(idUtilisateur)
+  envoyerA(idUtilisateur, { type: 'compteurs' })
+}
+
+// Nouveau trajet publié : les membres dont une alerte correspond sont
+// prévenus en direct (leur pastille se met à jour)
+export async function prevenirAbonnes(idTrajet) {
+  const abonnes = await alerteModel.abonnesConcernes(idTrajet)
+  for (const id of abonnes) envoyerA(id, { type: 'compteurs', alerte: true })
 }
 
 export async function supprimer(idUtilisateur, id) {

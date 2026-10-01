@@ -33,6 +33,10 @@ import favoriRoutes from './routes/favori.routes.js'
 import adminRoutes from './routes/admin.routes.js'
 import parametreRoutes from './routes/parametre.routes.js'
 import documentRoutes from './routes/document.routes.js'
+import notificationRoutes from './routes/notification.routes.js'
+import * as tempsReel from './tempsReel.js'
+import { MODE as MODE_EMAIL } from './services/emailService.js'
+import { purgerCodes } from './models/codeModel.js'
 import { MODE as MODE_STOCKAGE } from './services/stockageService.js'
 import { cloturerTrajetsPasses } from './models/trajetModel.js'
 import { purgerJustificatifs } from './services/demandeConducteurService.js'
@@ -92,6 +96,7 @@ app.use('/api/alertes', alerteRoutes)
 app.use('/api/favoris', favoriRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/documents', documentRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 // ---------- Fin de chaîne ----------
 app.use(notFound)
@@ -119,12 +124,16 @@ async function demarrer() {
   await lancerTache('justificatifs', purgerJustificatifs)
   setInterval(() => lancerTache('clôture', cloturerTrajetsPasses), 15 * 60 * 1000)
   setInterval(() => lancerTache('justificatifs', purgerJustificatifs), 24 * 60 * 60 * 1000)
+  // Codes de vérification de plus de 7 jours : effacés (minimisation, RGPD)
+  setInterval(() => lancerTache('codes', purgerCodes), 24 * 60 * 60 * 1000)
 
   const pret = function () {
-    console.log(`API Covoit'May prête sur le port ${PORT} (/api), stockage des médias : ${MODE_STOCKAGE === 'b2' ? 'Backblaze B2' : 'dossier local'}`)
+    console.log(`API Covoit'May prête sur le port ${PORT} (/api), stockage des médias : ${MODE_STOCKAGE === 'b2' ? 'Backblaze B2' : 'dossier local'}, ` +
+      `emails : ${MODE_EMAIL === 'smtp' ? 'SMTP' : 'affichés dans la console'}, temps réel : /api/temps-reel`)
   }
-  if (HOTE) app.listen(PORT, HOTE, pret)
-  else app.listen(PORT, pret)
+  const serveur = HOTE ? app.listen(PORT, HOTE, pret) : app.listen(PORT, pret)
+  // Le temps réel (WebSocket) partage le port de l'API
+  tempsReel.demarrer(serveur, FRONTEND_URL.split(','))
 }
 
 demarrer()

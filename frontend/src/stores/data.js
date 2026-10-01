@@ -15,6 +15,13 @@
 import { defineStore } from 'pinia'
 import { api, lire, envoyer, remplacer, modifier, supprimer, ouvrirFichier, telechargerFichier } from '../services/api'
 import { COORDONNEES_COMMUNES } from '../data/mapData'
+import { ecouter } from '../services/tempsReel'
+
+// Numéro de la dernière demande de compteurs : une réponse plus ancienne
+// qui arriverait en retard est ignorée (sinon la pastille « non lus »
+// pouvait réapparaître après la lecture des messages)
+let numeroCompteurs = 0
+let minuteurCompteurs = null
 
 export const useDataStore = defineStore('data', {
   state() {
@@ -26,7 +33,8 @@ export const useDataStore = defineStore('data', {
       delaiRemboursementHeures: 24,
       // Compteurs de la barre de navigation
       nbMessagesNonLus: 0,
-      nbAlertesActives: 0,
+      // Trajets nouveaux pour mes alertes depuis ma dernière visite (RG11.6)
+      nbAlertesNouvelles: 0,
       // Compteurs du menu de l'administration
       aTraiter: { demandesConducteur: 0, avisSignales: 0, litiges: 0 }
     }
@@ -189,6 +197,7 @@ export const useDataStore = defineStore('data', {
     // ========== MESSAGERIE ==========
 
     async conversations() {
+      numeroCompteurs++
       const resultat = await lire('/messages')
       this.nbMessagesNonLus = resultat.nonLus
       return resultat.conversations
@@ -204,6 +213,23 @@ export const useDataStore = defineStore('data', {
       return envoyer('/messages', { idDestinataire, contenu })
     },
 
+    // La conversation ouverte reçoit un message : il est lu tout de suite (RG09.9)
+    async marquerLus(avec) {
+      numeroCompteurs++
+      const resultat = await envoyer('/messages/lus', { avec })
+      this.nbMessagesNonLus = resultat.nonLus
+    },
+
+    // Modifier un texte, dans les 15 minutes (RG09.3)
+    modifierMessage(id, contenu) {
+      return modifier('/messages/' + id, { contenu })
+    },
+
+    // Supprimer pour moi (pourTous = false) ou pour tous (RG09.8)
+    supprimerMessage(id, pourTous) {
+      return supprimer('/messages/' + id, { pourTous })
+    },
+
     // Photo ou message vocal (RG09.6, RG09.7)
     envoyerFichierMessage(idDestinataire, fichier, nomFichier, dureeSecondes) {
       const formulaire = new FormData()
@@ -215,10 +241,15 @@ export const useDataStore = defineStore('data', {
 
     // ========== ALERTES ET FAVORIS ==========
 
-    async mesAlertes() {
-      const alertes = await lire('/alertes')
-      this.nbAlertesActives = alertes.filter((a) => a.active).length
-      return alertes
+    mesAlertes() {
+      return lire('/alertes')
+    },
+
+    // « Mes alertes » est ouverte : plus rien n'est nouveau (RG11.6)
+    async marquerAlertesVues() {
+      numeroCompteurs++
+      this.nbAlertesNouvelles = 0
+      await envoyer('/alertes/vues')
     },
 
     creerAlerte(alerte) {
@@ -257,21 +288,37 @@ export const useDataStore = defineStore('data', {
 
     // ========== COMPTEURS DE LA BARRE DE NAVIGATION ==========
 
-    // Messages non lus et alertes actives du membre connecté.
+    // Messages non lus et trajets nouveaux pour mes alertes (une seule requête).
     // En cas d'erreur, on garde les anciens chiffres (ce n'est pas grave).
     async chargerCompteurs() {
+      const numero = ++numeroCompteurs
       try {
-        const [messages, alertes] = await Promise.all([lire('/messages'), lire('/alertes')])
-        this.nbMessagesNonLus = messages.nonLus
-        this.nbAlertesActives = alertes.filter((a) => a.active).length
+        const compteurs = await lire('/notifications')
+        if (numero !== numeroCompteurs) return // une demande plus récente est partie
+        this.nbMessagesNonLus = compteurs.messagesNonLus
+        this.nbAlertesNouvelles = compteurs.alertesNouvelles
       } catch {
         // rien
       }
     },
 
     viderCompteurs() {
+      numeroCompteurs++
       this.nbMessagesNonLus = 0
-      this.nbAlertesActives = 0
+      this.nbAlertesNouvelles = 0
+    },
+
+    // Temps réel : les pastilles se mettent à jour dès que le serveur
+    // signale un nouveau message ou un nouveau trajet pour une alerte.
+    // Plusieurs événements rapprochés ne déclenchent qu'une requête.
+    ecouterTempsReel() {
+      const rafraichir = () => {
+        clearTimeout(minuteurCompteurs)
+        minuteurCompteurs = setTimeout(() => this.chargerCompteurs(), 300)
+      }
+      ecouter('compteurs', rafraichir)
+      ecouter('message', rafraichir)
+      ecouter('pret', rafraichir)
     },
 
     // ========== ADMINISTRATION ==========

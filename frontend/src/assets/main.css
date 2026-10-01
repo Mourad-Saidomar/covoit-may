@@ -1707,48 +1707,94 @@ a:hover {
 .chat-vocal {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   /* tient dans une bulle (75 % de la conversation) même sur un petit écran */
-  width: min(230px, 52vw);
-  padding: 0.25rem 0.35rem;
+  width: min(250px, 56vw);
+  padding: 0.2rem 0.1rem;
 }
 .chat-vocal-lecture {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: 0;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.25);
   color: inherit;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 .chat-bubble.theirs .chat-vocal-lecture {
   background-color: var(--cm-primary);
   color: #fff;
 }
-.chat-vocal-piste {
-  position: relative;
+.chat-vocal-corps {
   flex-grow: 1;
-  height: 4px;
-  border-radius: 2px;
-  background-color: rgba(0, 0, 0, 0.15);
+  min-width: 0;
 }
-.chat-bubble.mine .chat-vocal-piste {
-  background-color: rgba(255, 255, 255, 0.35);
+/* Forme d'onde : des barres verticales ; celles déjà écoutées se colorent */
+.chat-vocal-onde {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
 }
-.chat-vocal-avance {
-  position: absolute;
-  inset: 0 auto 0 0;
+.chat-vocal-barre {
+  flex: 1;
+  min-width: 2px;
   border-radius: 2px;
   background-color: currentColor;
+  opacity: 0.35;
+  transition: opacity 0.1s linear;
+}
+.chat-vocal-barre.jouee {
+  opacity: 1;
+}
+.chat-bubble.theirs .chat-vocal-barre.jouee {
+  color: var(--cm-primary);
+}
+/* Curseur invisible posé sur l'onde : cliquer ou glisser pour se déplacer */
+.chat-vocal-curseur {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.chat-vocal-curseur:focus-visible + *,
+.chat-vocal-onde:focus-within {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.chat-vocal-infos {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.1rem;
 }
 .chat-vocal-duree {
-  flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.chat-vocal-vitesse {
+  padding: 0 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.chat-bubble.theirs .chat-vocal-vitesse {
+  background-color: rgba(45, 108, 88, 0.12);
+  color: var(--cm-primary-dark);
 }
 /* Barre d'écriture : boutons photo et micro */
 .chat-outil {
@@ -1832,5 +1878,304 @@ a:hover {
   }
   .enregistreur-point {
     animation: none;
+  }
+}
+
+/* ---------- Barre de navigation : profil et déconnexion (ordinateur) ----------
+   L'avatar et le prénom mènent à « Mon profil ». Indices d'interaction :
+   curseur « main », fond vert clair et avatar qui grossit au survol,
+   infobulle « Mon profil » (attribut data-infobulle). */
+.navbar-profil {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.75rem 0.2rem 0.2rem;
+  border-radius: 999px;
+  color: var(--cm-dark);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.navbar-profil .avatar {
+  transition: transform 0.2s ease;
+}
+.navbar-profil:hover,
+.navbar-profil:focus-visible,
+.navbar-profil.router-link-active {
+  background-color: var(--cm-primary-light);
+  box-shadow: 0 0 0 2px rgba(45, 108, 88, 0.18);
+  color: var(--cm-primary-dark);
+}
+.navbar-profil:hover .avatar {
+  transform: scale(1.08);
+}
+.navbar-profil:focus-visible {
+  outline: 3px solid rgba(45, 108, 88, 0.35);
+  outline-offset: 2px;
+}
+.btn-deconnexion {
+  position: relative;
+  border: 1px solid rgba(201, 75, 58, 0.35);
+  color: var(--cm-danger);
+  background-color: #fff;
+}
+.btn-deconnexion:hover,
+.btn-deconnexion:focus-visible {
+  border-color: var(--cm-danger);
+  background-color: #fbe9e6;
+  color: var(--cm-danger);
+}
+/* Infobulle : apparaît sous l'élément au survol ou au clavier */
+[data-infobulle]::after {
+  content: attr(data-infobulle);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 1100;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.4rem;
+  background-color: var(--cm-dark);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+[data-infobulle]:hover::after,
+[data-infobulle]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar-profil,
+  .navbar-profil .avatar,
+  [data-infobulle]::after {
+    transition: none;
+  }
+}
+
+/* ---------- Code à 6 chiffres (CodeVerification.vue) et pages du compte ---------- */
+.auth-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--cm-primary-light);
+  color: var(--cm-primary);
+  font-size: 1.75rem;
+}
+.code-verification {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.code-case {
+  width: 3rem;
+  height: 3.5rem;
+  padding: 0;
+  border: 2px solid #cfdcd4;
+  border-radius: 0.75rem;
+  background-color: #fff;
+  color: var(--cm-primary-dark);
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.code-case:focus {
+  border-color: var(--cm-primary);
+  box-shadow: 0 0 0 0.2rem rgba(45, 108, 88, 0.18);
+  outline: none;
+}
+.code-case:disabled {
+  background-color: #f3f1e8;
+}
+@media (max-width: 400px) {
+  .code-verification {
+    gap: 0.35rem;
+  }
+  .code-case {
+    width: 2.6rem;
+    height: 3.1rem;
+    font-size: 1.35rem;
+  }
+}
+
+/* ---------- Messagerie : menu, accusés, « en train d'écrire », modification ---------- */
+.chat-zone {
+  max-height: 45vh;
+  overscroll-behavior: contain;
+}
+.chat-bubble {
+  position: relative;
+  padding-right: 1.9rem;
+}
+.chat-texte {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-pied {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  text-align: right;
+  opacity: 0.8;
+}
+.chat-statut {
+  font-size: 0.95rem;
+  vertical-align: -0.1em;
+}
+/* Lu : double coche en or (sur la bulle verte) */
+.chat-statut-lu {
+  color: var(--cm-gold);
+  opacity: 1;
+}
+.conversation-item .chat-statut-lu {
+  color: #3e7cb1;
+}
+.chat-bubble.chat-supprime {
+  opacity: 0.75;
+}
+/* Bouton « ⋯ » : visible au survol ou au clavier ; toujours sur écran tactile */
+.chat-menu {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.15rem;
+}
+.chat-menu-bouton {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.chat-ligne:hover .chat-menu-bouton,
+.chat-menu-bouton:focus-visible,
+.chat-menu-bouton[aria-expanded="true"] {
+  opacity: 0.85;
+}
+.chat-menu-bouton:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+.chat-bubble.chat-media .chat-menu-bouton {
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+@media (hover: none) {
+  .chat-menu-bouton {
+    opacity: 0.6;
+  }
+}
+.chat-menu-liste {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  min-width: 13rem;
+  margin: 0.2rem 0 0;
+  padding: 0.35rem;
+  list-style: none;
+  border-radius: 0.75rem;
+  background-color: #fff;
+  box-shadow: 0 10px 28px rgba(18, 59, 58, 0.18);
+}
+.chat-menu-liste button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--cm-dark);
+  font-size: 0.875rem;
+  text-align: left;
+}
+.chat-menu-liste button:hover,
+.chat-menu-liste button:focus-visible {
+  background-color: var(--cm-primary-light);
+}
+.chat-menu-liste button.text-danger:hover {
+  background-color: #fbe9e6;
+}
+/* « En train d'écrire » : trois points qui rebondissent */
+.chat-ecrit-texte {
+  color: var(--cm-primary);
+  font-style: italic;
+}
+.chat-bubble.chat-ecrit {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.75rem 0.9rem;
+}
+.chat-ecrit span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #8a9a92;
+  animation: rebond 1.2s ease-in-out infinite;
+}
+.chat-ecrit span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.chat-ecrit span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes rebond {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+/* Bandeau « Modifier le message » au-dessus du champ */
+.chat-edition {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid #edf1ee;
+  border-left: 4px solid var(--cm-primary);
+  background-color: var(--cm-primary-light);
+}
+/* « Nouveaux messages » quand on lit plus haut */
+.chat-nouveaux {
+  position: absolute;
+  left: 50%;
+  bottom: 5.5rem;
+  z-index: 5;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 16px rgba(18, 59, 58, 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-ecrit span {
+    animation: none;
+  }
+  .chat-menu-bouton,
+  .chat-vocal-barre {
+    transition: none;
   }
 }

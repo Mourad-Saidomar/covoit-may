@@ -5,6 +5,7 @@
 // prix, véhicule du conducteur…) sont aussi vérifiées par les
 // triggers de la base : même un appel direct en SQL les respecte.
 // ============================================================
+import * as alerteService from './alerteService.js'
 import { transaction } from '../config/db.js'
 import { ErreurApi } from '../middlewares/errorHandler.js'
 import * as trajetModel from '../models/trajetModel.js'
@@ -54,6 +55,7 @@ export async function publier(utilisateur, donnees) {
     idVehicule = vehicule.id_vehicule
   }
   const id = await trajetModel.creer(donnees, utilisateur.id, idVehicule)
+  alerteService.prevenirAbonnes(id).catch((e) => console.error('[alertes]', e.message))
   return detail(id)
 }
 

@@ -9,7 +9,7 @@ import path from 'node:path'
 import { requete } from '../config/db.js'
 
 // Colonnes lisibles : le mot de passe n'en fait jamais partie
-const COLONNES = `id_utilisateur, nom, prenom, email, telephone, adresse, commune, date_naissance, bio, photo,
+const COLONNES = `id_utilisateur, nom, prenom, email, email_verifie, telephone, adresse, commune, date_naissance, bio, photo,
   role, statut_verification, statut_compte, note_moyenne, nb_avis, date_inscription, id_admin`
 
 // Adresse (relative à /api) de la photo de profil, ou null s'il n'y en a pas.
@@ -27,6 +27,7 @@ export function versUtilisateur(l) {
     nom: l.nom,
     prenom: l.prenom,
     email: l.email,
+    emailVerifie: l.email_verifie === 1,
     telephone: l.telephone,
     adresse: l.adresse,
     commune: l.commune,
@@ -69,10 +70,24 @@ export async function trouverParId(id, cx) {
 // Pour la connexion : on a besoin de l'empreinte du mot de passe
 export async function trouverPourConnexion(email) {
   const [ligne] = await requete(
-    `SELECT id_utilisateur, prenom, mot_de_passe, role, statut_compte,
+    `SELECT id_utilisateur, prenom, email, mot_de_passe, role, statut_compte, email_verifie,
             (bloque_jusqu_a IS NOT NULL AND bloque_jusqu_a > NOW()) AS est_bloque
        FROM utilisateur WHERE email = ?`, [email])
   return ligne || null
+}
+
+// Pour les codes envoyés par email (inscription, mot de passe oublié)
+export async function trouverParEmail(email) {
+  const [ligne] = await requete(
+    'SELECT id_utilisateur, prenom, email, email_verifie, statut_compte, role FROM utilisateur WHERE email = ?',
+    [String(email).trim().toLowerCase()])
+  return ligne || null
+}
+
+// Le code reçu par email a été validé : l'adresse est vérifiée (RG02.20)
+export async function validerEmail(id) {
+  await requete(
+    'UPDATE utilisateur SET email_verifie = 1, email_verifie_le = NOW() WHERE id_utilisateur = ? AND email_verifie = 0', [id])
 }
 
 export async function lireEmpreinte(id) {

@@ -25,3 +25,16 @@ export const validateConnexionBody = verifierCorps({
   // À la connexion on ne vérifie pas la robustesse : juste un texte non vide
   motDePasse: texte({ max: 200 })
 })
+
+// Code à 6 chiffres reçu par email (RG02.21)
+const CODE = texte({ min: 6, max: 6, motif: /^[0-9]{6}$/, message: 'doit contenir 6 chiffres' })
+
+export const validateVerificationBody = verifierCorps({ email: email(), code: CODE })
+
+export const validateEmailBody = verifierCorps({ email: email() })
+
+export const validateReinitialisationBody = verifierCorps({
+  email: email(),
+  code: CODE,
+  nouveauMotDePasse: motDePasse()
+})

@@ -4,7 +4,8 @@
 // ------------------------------------------------------------
 // Elle change selon si on est connecté ou pas :
 // - pas connecté  -> boutons "Connexion" et "Inscription"
-// - connecté      -> alertes, messagerie + menu avec l'avatar
+// - connecté      -> alertes, messagerie, avatar (lien vers « Mon profil »)
+//                    et bouton « Déconnexion »
 // Sur mobile et tablette, un bouton « burger » ouvre un panneau :
 // la carte du membre, puis les liens en lignes avec leurs icônes.
 // Le panneau est géré par Vue (menuOuvert) : il se ferme tout seul
@@ -49,7 +50,7 @@ export default {
     },
     // Nombre d'alertes trajet actives (affiché dans la cloche).
     alertesNonLues() {
-      return this.auth.estMembre ? this.data.nbAlertesActives : 0;
+      return this.auth.estMembre ? this.data.nbAlertesNouvelles : 0;
     },
     // Le libellé du rôle pour rendre le statut visible immédiatement.
     // Il vient du store : un seul endroit définit les rôles du site.
@@ -209,7 +210,7 @@ export default {
               >
                 <i class="bi bi-bell"></i><span class="d-lg-none">Mes alertes</span>
                 <span v-if="alertesNonLues > 0" class="badge rounded-pill bg-danger badge-pulse menu-compteur">
-                  {{ alertesNonLues }}<span class="visually-hidden"> alertes actives</span>
+                  {{ alertesNonLues }}<span class="visually-hidden"> nouveaux trajets pour vos alertes</span>
                 </span>
                 <span class="visually-hidden d-none d-lg-inline">Mes alertes</span>
               </router-link>
@@ -229,42 +230,28 @@ export default {
               </router-link>
             </li>
 
-            <!-- Ordinateur : statut et menu déroulant de l'avatar -->
+            <!-- Ordinateur : statut, lien vers « Mon profil » (avatar + prénom) et déconnexion -->
             <li class="nav-item me-lg-2 d-none d-lg-block">
               <span class="user-status-badge" :class="classeStatutUtilisateur">
                 {{ statutUtilisateur }}
               </span>
             </li>
-            <li class="nav-item dropdown d-none d-lg-block">
-              <a
-                id="user-menu"
-                class="nav-link dropdown-toggle d-flex align-items-center gap-2"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
+            <li class="nav-item d-none d-lg-block">
+              <router-link
+                :to="{ name: 'my-profile' }"
+                class="navbar-profil"
+                data-infobulle="Mon profil"
+                aria-label="Mon profil"
               >
                 <AvatarMembre :personne="auth.utilisateur" taille="sm" />
-                <span class="d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                  <router-link class="dropdown-item" :to="{ name: 'my-profile' }">
-                    <i class="bi bi-person me-2"></i>Mon profil
-                  </router-link>
-                </li>
-                <li v-if="auth.peutEchanger">
-                  <router-link class="dropdown-item" :to="{ name: 'my-alerts' }">
-                    <i class="bi bi-bell me-2"></i>Mes alertes
-                  </router-link>
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <button class="dropdown-item text-danger" @click="seDeconnecter">
-                    <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
-                  </button>
-                </li>
-              </ul>
+                <span class="navbar-profil-nom d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
+              </router-link>
+            </li>
+            <li class="nav-item d-none d-lg-block ms-lg-2">
+              <button type="button" class="btn btn-sm btn-deconnexion" data-infobulle="Se déconnecter"
+                aria-label="Se déconnecter" @click="seDeconnecter">
+                <i class="bi bi-box-arrow-right"></i><span class="d-none d-xl-inline ms-1">Déconnexion</span>
+              </button>
             </li>
 
             <!-- Mobile : déconnexion en bas du panneau -->

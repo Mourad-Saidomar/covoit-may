@@ -11,6 +11,7 @@ import router from './router'
 import { useAuthStore } from './stores/auth'
 import { useDataStore } from './stores/data'
 import { surSessionFermee } from './services/api'
+import { estConnecte } from './services/tempsReel'
 
 // On importe Bootstrap (le CSS et le JavaScript)
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -41,6 +42,14 @@ surSessionFermee(function (message) {
 // connecté ?) et on charge les communes et le taux de commission.
 const auth = useAuthStore()
 const data = useDataStore()
+
+// Pastilles de la barre de navigation : mises à jour en direct par le
+// temps réel ; sans lui (connexion impossible), toutes les 30 secondes
+data.ecouterTempsReel()
+setInterval(function () {
+  if (auth.estMembre && !estConnecte()) data.chargerCompteurs()
+}, 30000)
+
 Promise.all([auth.initialiser(), data.chargerReferences()]).finally(function () {
   // On branche le routeur (pour naviguer entre les pages)
   app.use(router)

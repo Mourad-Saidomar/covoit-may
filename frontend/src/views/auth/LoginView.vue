@@ -4,8 +4,9 @@
 // ------------------------------------------------------------
 // L'utilisateur entre son email et son mot de passe.
 // Le store auth vérifie et renvoie :
-// - '' (texte vide)  -> connexion réussie
-// - un message       -> il y a une erreur à afficher
+// - '' (texte vide)              -> connexion réussie
+// - { message, code, email }     -> une erreur à afficher ; si l'adresse
+//   email n'est pas encore vérifiée, on va saisir le code reçu (RG02.20)
 // ============================================================
 import { useAuthStore } from '../../stores/auth'
 
@@ -18,14 +19,7 @@ export default {
       motDePasse: '',
       erreur: '',              // le message d'erreur à afficher
       afficherMotDePasse: false,
-      chargement: false,       // true pendant la connexion
-      // Les comptes de test (données de démonstration de la base)
-      comptesDemo: [
-        { label: 'Conductrice', email: 'rachida@exemple.yt', motDePasse: 'demo1234' },
-        { label: 'Passagère', email: 'naima@exemple.yt', motDePasse: 'demo1234' },
-        { label: 'Demande conducteur', email: 'fatima@exemple.yt', motDePasse: 'demo1234' },
-        { label: 'Admin', email: 'admin@covoitmay.yt', motDePasse: 'admin1234' }
-      ]
+      chargement: false        // true pendant la connexion
     }
   },
 
@@ -45,24 +39,23 @@ export default {
   },
 
   methods: {
-    // Remplit le formulaire avec un compte de démo
-    remplirDemo(compte) {
-      this.email = compte.email
-      this.motDePasse = compte.motDePasse
-    },
-
     // Quand on valide le formulaire : le serveur vérifie le mot de passe
     async valider() {
       this.erreur = ''
       this.chargement = true
 
-      // seConnecter renvoie '' si tout va bien, sinon le message du serveur
+      // seConnecter renvoie '' si tout va bien, sinon l'erreur du serveur
       // (mot de passe faux, compte suspendu, trop de tentatives…)
       const resultat = await this.auth.seConnecter(this.email, this.motDePasse)
       this.chargement = false
 
       if (resultat !== '') {
-        this.erreur = resultat
+        // Adresse pas encore vérifiée : un code vient d'être envoyé, on va le saisir
+        if (resultat.code === 'EMAIL_NON_VERIFIE') {
+          this.$router.push({ name: 'verification-email', query: { email: resultat.email } })
+          return
+        }
+        this.erreur = resultat.message
         return
       }
 
@@ -141,7 +134,9 @@ export default {
                     <input id="remember-me" class="form-check-input" type="checkbox" />
                     <label class="form-check-label small" for="remember-me">Se souvenir de moi</label>
                   </div>
-                  <a href="#" class="small">Mot de passe oublié ?</a>
+                  <router-link :to="{ name: 'mot-de-passe-oublie', query: email ? { email } : {} }" class="small">
+                    Mot de passe oublié ?
+                  </router-link>
                 </div>
 
                 <button type="submit" class="btn btn-cm-primary w-100 py-2" :disabled="chargement">
@@ -149,16 +144,6 @@ export default {
                   Se connecter
                 </button>
               </form>
-
-              <hr class="my-4" />
-
-              <p class="text-center small text-muted mb-2">Comptes de démonstration :</p>
-              <div class="d-flex gap-2 justify-content-center flex-wrap">
-                <button v-for="compte in comptesDemo" :key="compte.email" type="button"
-                  class="btn btn-sm btn-outline-cm" @click="remplirDemo(compte)">
-                  {{ compte.label }}
-                </button>
-              </div>
 
               <p class="text-center mt-4 mb-0 small">
                 Pas encore de compte ?

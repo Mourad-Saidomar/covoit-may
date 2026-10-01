@@ -3,9 +3,9 @@
 // Page d'inscription
 // ------------------------------------------------------------
 // On choisit un rôle (passager ou conducteur), on remplit
-// le formulaire, et le store auth crée le compte.
-// creerCompte renvoie '' si tout va bien, sinon un message
-// d'erreur à afficher.
+// le formulaire, et le store auth crée le compte. Le compte n'a
+// accès à rien tant que l'adresse email n'est pas vérifiée : on
+// passe à la saisie du code à 6 chiffres reçu par email (RG02.20).
 // ============================================================
 import { useAuthStore } from '../../stores/auth'
 import { useDataStore } from '../../stores/data'
@@ -94,13 +94,15 @@ export default {
       })
       this.chargement = false
 
-      if (resultat !== '') {
-        this.erreur = resultat
+      if (resultat.erreur) {
+        this.erreur = resultat.erreur
         return
       }
-      // Compte créé : on ouvre l'espace correspondant à son rôle
-      // (un conducteur va envoyer ses justificatifs depuis son profil)
-      this.$router.push(this.auth.destinationApresConnexion())
+      // Compte créé : on saisit le code reçu par email
+      this.$router.push({
+        name: 'verification-email',
+        query: { email: resultat.email, envoi: resultat.emailEnvoye ? undefined : 'echec' }
+      })
     }
   }
 }

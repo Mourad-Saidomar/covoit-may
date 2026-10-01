@@ -72,6 +72,8 @@ CREATE TABLE utilisateur (
   nom                 VARCHAR(100) NOT NULL,
   prenom              VARCHAR(100) NOT NULL,
   email               VARCHAR(150) NOT NULL,
+  email_verifie       TINYINT(1) NOT NULL DEFAULT 0,  -- code reçu par email validé (RG02.20)
+  email_verifie_le    DATETIME DEFAULT NULL,
   mot_de_passe        CHAR(60) DEFAULT NULL,      -- NULL uniquement pour un compte supprimé
   telephone           VARCHAR(20) DEFAULT NULL,   -- NULL uniquement pour un compte supprimé
   adresse             VARCHAR(255) DEFAULT NULL,
@@ -111,7 +113,29 @@ CREATE TABLE utilisateur (
                                         AND (statut_compte <> 'supprime' OR (telephone IS NULL AND date_suppression IS NOT NULL))),
   CONSTRAINT ck_util_telephone_obligatoire CHECK (statut_compte = 'supprime' OR telephone IS NOT NULL),
   -- La photo d'un compte supprimé est effacée avec ses autres données (RG02.19)
-  CONSTRAINT ck_util_photo_suppression CHECK (statut_compte <> 'supprime' OR photo IS NULL)
+  CONSTRAINT ck_util_photo_suppression CHECK (statut_compte <> 'supprime' OR photo IS NULL),
+  CONSTRAINT ck_util_email_verifie CHECK (email_verifie = 0 OR email_verifie_le IS NOT NULL)          -- RG02.20
+) ENGINE=InnoDB;
+
+-- ---------- Codes de vérification envoyés par email ----------
+-- Inscription (vérifier l'adresse) et mot de passe oublié. Le code n'est
+-- jamais stocké : seulement son empreinte (HMAC-SHA256). 10 minutes,
+-- 5 essais au plus (RG02.21).
+CREATE TABLE code_verification (
+  id_code        INT NOT NULL AUTO_INCREMENT,
+  objet          ENUM('inscription','mot_de_passe') NOT NULL,
+  empreinte      CHAR(64) NOT NULL,
+  tentatives     TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  date_creation  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expire_le      DATETIME NOT NULL,
+  utilise_le     DATETIME DEFAULT NULL,
+  id_utilisateur INT NOT NULL,
+  PRIMARY KEY (id_code),
+  KEY idx_code_utilisateur (id_utilisateur, objet, date_creation),
+  CONSTRAINT fk_code_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES utilisateur (id_utilisateur),
+  CONSTRAINT ck_code_empreinte CHECK (empreinte REGEXP '^[0-9a-f]{64}$'),
+  CONSTRAINT ck_code_expiration CHECK (expire_le > date_creation AND expire_le <= date_creation + INTERVAL 10 MINUTE),
+  CONSTRAINT ck_code_tentatives CHECK (tentatives BETWEEN 0 AND 5)
 ) ENGINE=InnoDB;
 
 -- ---------- Véhicules ----------
@@ -316,8 +340,13 @@ CREATE TABLE message (
   fichier_type    VARCHAR(50) DEFAULT NULL,
   duree_secondes  SMALLINT UNSIGNED DEFAULT NULL,
   date_envoi      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Accusés : reçu (le destinataire était connecté), puis lu (RG09.9)
+  date_reception  DATETIME DEFAULT NULL,
   lu              TINYINT(1) NOT NULL DEFAULT 0,
   date_lecture    DATETIME DEFAULT NULL,
+  -- Texte modifié dans les 15 minutes (RG09.3), supprimé pour tous (RG09.8)
+  date_modification DATETIME DEFAULT NULL,
+  supprime_le     DATETIME DEFAULT NULL,
   id_expediteur   INT NOT NULL,
   id_destinataire INT NOT NULL,
   PRIMARY KEY (id_message),
@@ -325,13 +354,26 @@ CREATE TABLE message (
   KEY idx_message_non_lus (id_destinataire, lu),
   CONSTRAINT fk_message_expediteur FOREIGN KEY (id_expediteur) REFERENCES utilisateur (id_utilisateur),
   CONSTRAINT fk_message_destinataire FOREIGN KEY (id_destinataire) REFERENCES utilisateur (id_utilisateur),
-  -- Un texte n'est jamais vide et n'a pas de fichier ; une photo ou un vocal a toujours son fichier (RG09.2, RG09.6)
-  CONSTRAINT ck_message_contenu CHECK ((type_message = 'texte' AND fichier IS NULL AND CHAR_LENGTH(TRIM(contenu)) > 0)
-                                       OR (type_message <> 'texte' AND fichier IS NOT NULL AND fichier_type IS NOT NULL)),
+  -- Un texte n'est jamais vide et n'a pas de fichier ; une photo ou un vocal a toujours son fichier ;
+  -- un message supprimé pour tous n'a plus de contenu (RG09.2, RG09.6, RG09.8)
+  CONSTRAINT ck_message_contenu CHECK (
+       (supprime_le IS NOT NULL AND fichier IS NULL AND contenu = '')
+    OR (supprime_le IS NULL AND type_message = 'texte' AND fichier IS NULL AND CHAR_LENGTH(TRIM(contenu)) > 0)
+    OR (supprime_le IS NULL AND type_message <> 'texte' AND fichier IS NOT NULL AND fichier_type IS NOT NULL)),
   -- Un vocal dure de 1 seconde à 2 minutes ; seul un vocal a une durée (RG09.7)
   CONSTRAINT ck_message_duree CHECK ((type_message = 'vocal' AND duree_secondes BETWEEN 1 AND 120)
                                      OR (type_message <> 'vocal' AND duree_secondes IS NULL)),
   CONSTRAINT ck_message_personnes CHECK (id_expediteur <> id_destinataire)                               -- RG09.1
+) ENGINE=InnoDB;
+
+-- Messages masqués par une personne (« supprimer pour moi », RG09.8)
+CREATE TABLE message_masque (
+  id_message     INT NOT NULL,
+  id_utilisateur INT NOT NULL,
+  date_masquage  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_message, id_utilisateur),
+  CONSTRAINT fk_masque_message FOREIGN KEY (id_message) REFERENCES message (id_message),
+  CONSTRAINT fk_masque_utilisateur FOREIGN KEY (id_utilisateur) REFERENCES utilisateur (id_utilisateur)
 ) ENGINE=InnoDB;
 
 -- ---------- Litiges ----------
@@ -373,6 +415,8 @@ CREATE TABLE alerte (
   prix_max       DECIMAL(6,2) DEFAULT NULL,
   active         TINYINT(1) NOT NULL DEFAULT 1,
   date_creation  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Les trajets publiés après cette date sont « nouveaux » (RG11.6)
+  derniere_consultation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   id_utilisateur INT NOT NULL,
   PRIMARY KEY (id_alerte),
   UNIQUE KEY uk_alerte_doublon (id_utilisateur, lieu_depart, lieu_arrivee, heure_min, heure_max),       -- RG11.3
@@ -947,13 +991,51 @@ END$$
 
 CREATE TRIGGER trg_message_avant_modification BEFORE UPDATE ON message FOR EACH ROW
 BEGIN
-  IF NEW.contenu <> OLD.contenu OR NEW.id_expediteur <> OLD.id_expediteur
-     OR NEW.id_destinataire <> OLD.id_destinataire OR NEW.date_envoi <> OLD.date_envoi
-     OR NEW.type_message <> OLD.type_message OR NOT (NEW.fichier <=> OLD.fichier) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message envoyé ne peut plus être modifié (RG09.3).';
+  -- Ce qui ne change jamais : les personnes, la date d'envoi, le type
+  IF NEW.id_expediteur <> OLD.id_expediteur OR NEW.id_destinataire <> OLD.id_destinataire
+     OR NEW.date_envoi <> OLD.date_envoi OR NEW.type_message <> OLD.type_message THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message envoyé ne peut pas changer d’auteur, de destinataire ni de type (RG09.3).';
   END IF;
-  IF NEW.lu = 1 AND OLD.lu = 0 THEN
+  -- Un message supprimé pour tous le reste
+  IF OLD.supprime_le IS NOT NULL AND NOT (NEW.supprime_le <=> OLD.supprime_le) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message supprimé ne peut pas être restauré (RG09.8).';
+  END IF;
+  -- Suppression pour tous : 24 heures au plus après l'envoi ; le contenu est effacé (RG09.8)
+  IF NEW.supprime_le IS NOT NULL AND OLD.supprime_le IS NULL THEN
+    IF NOW() > OLD.date_envoi + INTERVAL 24 HOUR THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message ne peut être supprimé pour tous que dans les 24 heures qui suivent son envoi (RG09.8).';
+    END IF;
+    SET NEW.supprime_le = NOW(), NEW.contenu = '', NEW.fichier = NULL, NEW.fichier_type = NULL, NEW.date_modification = NULL;
+  ELSEIF OLD.supprime_le IS NOT NULL THEN
+    -- Message déjà supprimé : seuls les accusés de lecture peuvent encore changer
+    IF NEW.contenu <> OLD.contenu OR NOT (NEW.fichier <=> OLD.fichier) THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message supprimé ne peut plus être modifié (RG09.8).';
+    END IF;
+  ELSE
+    -- Modification : un texte, dans les 15 minutes qui suivent l'envoi (RG09.3)
+    IF NOT (NEW.fichier <=> OLD.fichier) THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Une photo ou un vocal envoyé ne peut pas être remplacé (RG09.3).';
+    END IF;
+    IF NEW.contenu <> OLD.contenu THEN
+      IF OLD.type_message <> 'texte' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Seul un message texte peut être modifié (RG09.3).';
+      END IF;
+      IF NOW() > OLD.date_envoi + INTERVAL 15 MINUTE THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Un message ne peut être modifié que dans les 15 minutes qui suivent son envoi (RG09.3).';
+      END IF;
+      SET NEW.date_modification = NOW();
+    END IF;
+  END IF;
+  -- Accusés : reçu puis lu, jamais en arrière (RG09.9)
+  IF OLD.lu = 1 THEN
+    SET NEW.lu = 1, NEW.date_lecture = OLD.date_lecture;
+  ELSEIF NEW.lu = 1 THEN
     SET NEW.date_lecture = NOW();
+  END IF;
+  IF OLD.date_reception IS NOT NULL THEN
+    SET NEW.date_reception = OLD.date_reception;
+  ELSEIF NEW.lu = 1 AND NEW.date_reception IS NULL THEN
+    SET NEW.date_reception = NOW();
   END IF;
 END$$
 
@@ -1226,6 +1308,9 @@ INSERT INTO demande_conducteur (id_demande, marque, modele, couleur, immatricula
 -- refusée il y a plus de 30 jours : justificatifs effacés
 (8, 'Citroën', 'C3', 'grise', 'GZ-450-BN', 4, NULL, NULL, 'refusee', 'Permis de conduire expiré.', NOW() - INTERVAL 45 DAY, NOW() - INTERVAL 40 DAY, 9, 1);
 
+-- Les comptes de démonstration ont déjà validé leur adresse email (RG02.20)
+UPDATE utilisateur SET email_verifie = 1, email_verifie_le = date_inscription WHERE statut_compte <> 'supprime';
+
 -- ---------- Véhicules ----------
 INSERT INTO vehicule (id_vehicule, marque, modele, couleur, immatriculation, nb_places, actif, date_ajout, id_utilisateur) VALUES
 (1, 'Peugeot', '208', 'grise', 'FX-208-KM', 4, 1, '2025-03-13 10:00:00', 1),
@@ -1402,6 +1487,8 @@ GRANT INSERT, UPDATE, DELETE ON covoitmay.avis TO 'covoitmay_app'@'localhost', '
 GRANT INSERT, UPDATE ON covoitmay.message TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
 GRANT INSERT, UPDATE ON covoitmay.litige TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
 GRANT INSERT, UPDATE, DELETE ON covoitmay.alerte TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
+GRANT INSERT, UPDATE, DELETE ON covoitmay.code_verification TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
+GRANT INSERT ON covoitmay.message_masque TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
 GRANT INSERT, DELETE ON covoitmay.favori TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
 GRANT UPDATE ON covoitmay.parametre TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';
 GRANT INSERT ON covoitmay.journal_admin TO 'covoitmay_app'@'localhost', 'covoitmay_app'@'127.0.0.1';

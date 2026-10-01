@@ -15,6 +15,11 @@ export async function changerEtat(req, res) {
   res.json(await alerteService.changerEtat(req.utilisateur.id, req.params.id, req.body.active))
 }
 
+export async function marquerVues(req, res) {
+  await alerteService.marquerVues(req.utilisateur.id)
+  res.status(204).end()
+}
+
 export async function supprimer(req, res) {
   await alerteService.supprimer(req.utilisateur.id, req.params.id)
   res.status(204).end()

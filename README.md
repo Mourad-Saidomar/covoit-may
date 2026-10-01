@@ -2,6 +2,8 @@
 
 Plateforme de covoiturage local pour Mayotte : projet fil rouge du titre professionnel DWWM.
 
+**Tout le parcours expliqué, de la conception à la mise en ligne :** [docs/guide-de-A-a-Z.md](docs/guide-de-A-a-Z.md)
+
 ## En ligne
 
 - Site : https://covoit-may.mourad-saidomar-sio.workers.dev (Cloudflare Workers, republié à chaque push sur `main`)
@@ -56,7 +58,11 @@ Chaque essai interdit affiche une erreur qui cite sa règle, par exemple « (RG0
 
 ```
 mariadb -u root -p covoitmay < database/migrations/2026-10-medias.sql
+mariadb -u root -p covoitmay < database/migrations/2026-10-temps-reel.sql
+mariadb -u root -p covoitmay < database/migrations/2026-10-temps-reel-droits-local.sql
 ```
+
+Le dernier fichier donne ses droits au compte `covoitmay_app` : il ne sert **qu'en local** (en production, le compte de l'hébergeur a déjà tous les droits). Sous PowerShell, `<` n'existe pas : utiliser `mariadb -u root -p covoitmay -e "source database/migrations/NOM.sql"`.
 
 ## 2. Lancer l'API
 
@@ -71,6 +77,10 @@ L'API répond sur http://localhost:3000/api. Pour vérifier qu'elle tourne : `GE
 
 **Médias (photos de profil, photos et vocaux de la messagerie).** Sans configuration, ils sont rangés dans `backend/uploads/medias` (non versionné). En production, ils vont dans un bucket **privé** Backblaze B2 : remplir `B2_S3_ENDPOINT`, `B2_BUCKET_MEDIAS`, `B2_KEY_ID` et `B2_APPLICATION_KEY` dans `.env`. Pour vérifier la connexion au stockage : `npm run test:stockage`.
 
+**E-mails (code à 6 chiffres à l'inscription et pour le mot de passe oublié).** Sans `SMTP_HOST`, rien n'est envoyé : le code s'affiche dans la console de l'API (`>>> CODE : 123456 <<<`), ce qui suffit pour tester en local. En production, remplir `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` et `MAIL_FROM`, puis vérifier avec `npm run test:email -- vous@exemple.fr`.
+
+**Temps réel.** La messagerie, les accusés de lecture, « en train d'écrire » et les pastilles passent par un WebSocket ouvert sur le même port que l'API (`/api/temps-reel`). S'il est coupé, le site relit les données régulièrement : il fonctionne quand même.
+
 ## 3. Lancer le frontend
 
 ```
@@ -83,9 +93,13 @@ Le site s'ouvre sur http://localhost:5173. Toutes ses données viennent de l'API
 
 Vite relaie les appels `/api` vers `http://localhost:3000` (voir `frontend/vite.config.ts`) : le navigateur ne parle qu'à une seule adresse. Pour une autre adresse d'API en production, définir `VITE_API_URL` au moment du build.
 
+Si le port 3000 est déjà pris sur le PC, lancer l'API sur un autre port (`PORT=3100` dans `backend/.env`) et indiquer ce port à Vite : `$env:API_CIBLE="http://localhost:3100"; npm run dev` (PowerShell).
+
 La connexion renvoie un jeton (JWT) gardé dans le navigateur et envoyé à chaque requête. Si le serveur le refuse (session expirée, compte suspendu…), le site déconnecte la personne et explique pourquoi.
 
 ## Mettre à jour l'API en production (alwaysdata)
+
+**Ordre à respecter :** 1. la base (migration), 2. l'API, 3. le site (`git push`). Le nouveau site a besoin de la nouvelle API ; l'ancienne API fonctionne avec la base migrée.
 
 Sur le PC (PowerShell, dossier du projet) :
 
@@ -103,7 +117,14 @@ find ~/covoitmay/backend -type d -not -path "*/node_modules/*" -exec chmod 755 {
 cd ~/covoitmay/backend && npm ci --omit=dev
 ```
 
-Puis appliquer les éventuelles nouvelles migrations (`database/migrations`) et cliquer sur « Redémarrer » dans le panneau alwaysdata (Web → Sites).
+S'il y a une nouvelle migration, l'appliquer **avant** de redémarrer (jamais les fichiers `-droits-local`) :
+
+```
+cd ~/covoitmay/backend
+mysql -h mysql-mourad.alwaysdata.net -u mourad -p mourad_covoitmay < database/migrations/NOM.sql
+```
+
+Si de nouvelles variables sont apparues dans `.env.example`, les ajouter dans `~/covoitmay/backend/.env` (`nano .env`). Puis cliquer sur « Redémarrer » dans le panneau alwaysdata (Web → Sites), et contrôler `/api/sante`.
 Les `chmod` sont indispensables : une archive créée sous Windows enregistre les dossiers sans le droit « x », et Linux refuserait d'y écrire les nouveaux fichiers. `.env` et `uploads/` ne sont jamais écrasés : ils ne sont pas dans l'archive.
 
 ## Comptes de démonstration
@@ -141,12 +162,19 @@ Valables en local et en ligne, sauf le mot de passe administrateur : `admin1234`
 | GET | `/api/documents/recus/:idReservation` (PDF) | passager de la réservation, administrateur |
 | GET | `/api/documents/releves/:mois` (PDF, ex. `2026-09`) | membre |
 | GET | `/api/documents/admin/activite/:mois`, `…/transactions/:mois`, `…/journal/:mois` (PDF) | administrateur |
+| POST | `/api/auth/verifier-email`, `/api/auth/renvoyer-code` (code à 6 chiffres) | public |
+| POST | `/api/auth/mot-de-passe-oublie`, `/api/auth/reinitialiser-mot-de-passe` | public |
+| GET | `/api/notifications` (messages non lus, nouveaux trajets des alertes) | membre |
+| POST | `/api/messages/lus` (`{ avec }`) | membre |
+| PATCH, DELETE | `/api/messages/:id` (modifier sous 15 min ; supprimer `{ pourTous }`) | auteur (ou destinataire pour « pour moi ») |
+| POST | `/api/alertes/vues` | membre |
+| WebSocket | `/api/temps-reel` (premier message : `{ type: 'auth', jeton }`) | membre |
 
 Les routes protégées attendent l'en-tête `Authorization: Bearer <jeton>`, où le jeton est renvoyé par la connexion.
 
 ## Règles de gestion
 
-Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.3.docx`, partie 4 : RG01 à RG13, soit 125 règles.
+Elles sont détaillées dans `infos_projet/Covoit-May-Cahier-des-Charges-v3.4.docx`, partie 4 : RG01 à RG13, soit 133 règles.
 
 Chaque règle est vérifiée à au moins un niveau : base de données (contraintes et triggers), API (middlewares et services) ou interface.
 ---------------------------------------------------------------------------------------------------------

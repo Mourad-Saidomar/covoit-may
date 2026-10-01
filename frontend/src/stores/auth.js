@@ -12,6 +12,7 @@
 // ============================================================
 import { defineStore } from "pinia";
 import { api, definirJeton, envoyer, lire } from "../services/api";
+import { connecter, deconnecter } from "../services/tempsReel";
 
 // ------------------------------------------------------------
 // Les trois rôles du projet (mêmes valeurs que dans la base) :
@@ -145,6 +146,7 @@ export const useAuthStore = defineStore("auth", {
         definirJeton(this.jeton);
         try {
           this.utilisateur = await lire("/auth/moi");
+          this.connecterTempsReel();
         } catch {
           this.fermerSession();
         }
@@ -159,12 +161,18 @@ export const useAuthStore = defineStore("auth", {
       this.utilisateur = await lire("/auth/moi");
     },
 
+    // Le temps réel (messagerie, pastilles) est réservé aux membres
+    connecterTempsReel() {
+      if (this.estMembre) connecter(this.jeton);
+    },
+
     // Enregistre le jeton reçu du serveur
     ouvrirSession(resultat) {
       this.jeton = resultat.jeton;
       this.utilisateur = resultat.utilisateur;
       this.messageSession = "";
       definirJeton(resultat.jeton);
+      this.connecterTempsReel();
       try {
         localStorage.setItem(CLE_JETON, resultat.jeton);
       } catch {
@@ -177,6 +185,7 @@ export const useAuthStore = defineStore("auth", {
       this.jeton = null;
       this.utilisateur = null;
       definirJeton(null);
+      deconnecter();
       try {
         localStorage.removeItem(CLE_JETON);
       } catch {
@@ -197,13 +206,44 @@ export const useAuthStore = defineStore("auth", {
     },
 
     // ========== CONNEXION / INSCRIPTION ==========
-    // Ces fonctions renvoient '' si tout va bien, sinon le message
-    // d'erreur du serveur (mauvais mot de passe, compte suspendu…)
 
+    // Renvoie '' si tout va bien, sinon { message, code, email }.
+    // code = 'EMAIL_NON_VERIFIE' : il faut saisir le code reçu par email.
     async seConnecter(email, motDePasse) {
       try {
         const resultat = await envoyer("/auth/connexion", { email, motDePasse });
         this.ouvrirSession(resultat);
+        return "";
+      } catch (erreur) {
+        const details = erreur.details || {};
+        return { message: erreur.message, code: details.code || "", email: details.email || email };
+      }
+    },
+
+    // Saisie du code à 6 chiffres reçu à l'inscription (RG02.20).
+    // Renvoie '' (connecté) ou le message d'erreur.
+    async verifierEmail(email, code) {
+      try {
+        this.ouvrirSession(await envoyer("/auth/verifier-email", { email, code }));
+        return "";
+      } catch (erreur) {
+        return erreur.message;
+      }
+    },
+
+    // Nouveau code par email (inscription)
+    renvoyerCode(email) {
+      return envoyer("/auth/renvoyer-code", { email });
+    },
+
+    // Mot de passe oublié : envoi du code, puis nouveau mot de passe (connecté ensuite)
+    demanderReinitialisation(email) {
+      return envoyer("/auth/mot-de-passe-oublie", { email });
+    },
+
+    async reinitialiserMotDePasse(email, code, nouveauMotDePasse) {
+      try {
+        this.ouvrirSession(await envoyer("/auth/reinitialiser-mot-de-passe", { email, code, nouveauMotDePasse }));
         return "";
       } catch (erreur) {
         return erreur.message;
@@ -225,10 +265,10 @@ export const useAuthStore = defineStore("auth", {
             cguAcceptees: infos.cguAcceptees,
           },
         });
-        this.ouvrirSession(resultat);
-        return "";
+        // Pas encore de session : le code reçu par email doit d'abord être saisi
+        return { erreur: "", email: resultat.email, emailEnvoye: resultat.emailEnvoye };
       } catch (erreur) {
-        return erreur.message;
+        return { erreur: erreur.message };
       }
     },
 

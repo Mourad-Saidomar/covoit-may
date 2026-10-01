@@ -16,6 +16,22 @@ export async function connexion(req, res) {
   res.json(resultat)
 }
 
+export async function verifierEmail(req, res) {
+  res.json(await authService.verifierEmail(req.body.email, req.body.code))
+}
+
+export async function renvoyerCode(req, res) {
+  res.json(await authService.renvoyerCodeInscription(req.body.email))
+}
+
+export async function motDePasseOublie(req, res) {
+  res.json(await authService.motDePasseOublie(req.body.email))
+}
+
+export async function reinitialiserMotDePasse(req, res) {
+  res.json(await authService.reinitialiserMotDePasse(req.body.email, req.body.code, req.body.nouveauMotDePasse))
+}
+
 export async function moi(req, res) {
   res.json(await authService.moi(req.utilisateur))
 }

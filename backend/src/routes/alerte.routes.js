@@ -14,6 +14,8 @@ router.use(authentifier, autoriser(MEMBRES))
 
 router.get('/', alerteController.mesAlertes)
 router.post('/', validateAlerteBody, alerteController.creer)
+// La page « Mes alertes » a été ouverte : plus rien de nouveau (RG11.6)
+router.post('/vues', alerteController.marquerVues)
 router.patch('/:id', validateId(), validateEtatAlerteBody, alerteController.changerEtat)
 router.delete('/:id', validateId(), alerteController.supprimer)
 

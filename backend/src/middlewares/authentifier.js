@@ -24,13 +24,10 @@ export function creerJeton(id, role) {
   })
 }
 
-export async function authentifier(req, res, next) {
-  const entete = req.headers.authorization || ''
-  const [type, jeton] = entete.split(' ')
-  if (type !== 'Bearer' || !jeton) {
-    throw new ErreurApi(401, 'Vous devez être connecté.')
-  }
-
+// Vérifie un jeton et relit le compte : renvoie la personne connectée
+// { id, role, prenom… } ou lance une ErreurApi 401. Utilisée par
+// authentifier et par la connexion temps réel (tempsReel.js).
+export async function verifierJeton(jeton) {
   let contenu
   try {
     // On impose l'algorithme : un jeton "alg: none" est refusé
@@ -43,21 +40,33 @@ export async function authentifier(req, res, next) {
   if (contenu.role === 'admin') {
     const admin = await administrateurModel.trouverParId(id)
     if (!admin || !admin.actif) throw new ErreurApi(401, 'Ce compte administrateur n’est plus actif.')
-    req.utilisateur = { id: id, role: 'admin', prenom: admin.prenom }
-  } else {
-    const utilisateur = await utilisateurModel.trouverParId(id)
-    if (!utilisateur || STATUTS_BLOQUES.includes(utilisateur.statut_compte)) {
-      throw new ErreurApi(401, 'Ce compte n’est plus actif. Contactez le support.')
-    }
-    // Le rôle vient de la base, pas du jeton : il est à jour si
-    // l'administrateur vient d'accepter une demande conducteur.
-    req.utilisateur = {
-      id: id,
-      role: utilisateur.role,
-      prenom: utilisateur.prenom,
-      statut: utilisateur.statut_compte,
-      verifie: utilisateur.statut_verification === 1
-    }
+    return { id: id, role: 'admin', prenom: admin.prenom }
   }
+  const utilisateur = await utilisateurModel.trouverParId(id)
+  if (!utilisateur || STATUTS_BLOQUES.includes(utilisateur.statut_compte)) {
+    throw new ErreurApi(401, 'Ce compte n’est plus actif. Contactez le support.')
+  }
+  // Adresse email non vérifiée : aucun accès (RG02.20)
+  if (utilisateur.email_verifie !== 1) {
+    throw new ErreurApi(401, 'Votre adresse email n’est pas vérifiée.')
+  }
+  // Le rôle vient de la base, pas du jeton : il est à jour si
+  // l'administrateur vient d'accepter une demande conducteur.
+  return {
+    id: id,
+    role: utilisateur.role,
+    prenom: utilisateur.prenom,
+    statut: utilisateur.statut_compte,
+    verifie: utilisateur.statut_verification === 1
+  }
+}
+
+export async function authentifier(req, res, next) {
+  const entete = req.headers.authorization || ''
+  const [type, jeton] = entete.split(' ')
+  if (type !== 'Bearer' || !jeton) {
+    throw new ErreurApi(401, 'Vous devez être connecté.')
+  }
+  req.utilisateur = await verifierJeton(jeton)
   next()
 }

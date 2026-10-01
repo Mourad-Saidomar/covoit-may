@@ -24,6 +24,8 @@ import TripDetailView from '../views/TripDetailView.vue'
 import PublicProfileView from '../views/PublicProfileView.vue'
 import LoginView from '../views/auth/LoginView.vue'
 import RegisterView from '../views/auth/RegisterView.vue'
+import VerificationEmailView from '../views/auth/VerificationEmailView.vue'
+import MotDePasseOublieView from '../views/auth/MotDePasseOublieView.vue'
 import PublishTripView from '../views/PublishTripView.vue'
 import MyBookingsView from '../views/MyBookingsView.vue'
 import MyTripsView from '../views/MyTripsView.vue'
@@ -132,6 +134,18 @@ const routes = [
     name: 'register',
     component: RegisterView,
     meta: { titre: 'Inscription', invitesSeulement: true }
+  },
+  {
+    path: '/verification-email',
+    name: 'verification-email',
+    component: VerificationEmailView,
+    meta: { titre: 'Vérification de l’adresse email', invitesSeulement: true }
+  },
+  {
+    path: '/mot-de-passe-oublie',
+    name: 'mot-de-passe-oublie',
+    component: MotDePasseOublieView,
+    meta: { titre: 'Mot de passe oublié', invitesSeulement: true }
   },
 
   // ----- Pages du conducteur -----

@@ -23,6 +23,21 @@ export async function envoyerFichier(req, res) {
   res.status(201).json(message)
 }
 
+// La conversation ouverte reçoit un message en direct : il est lu
+export async function lire(req, res) {
+  res.json(await messageService.lire(req.utilisateur.id, req.body.avec))
+}
+
+// Modifier un texte (15 minutes, RG09.3)
+export async function modifier(req, res) {
+  res.json(await messageService.modifier(req.utilisateur.id, req.params.id, req.body.contenu))
+}
+
+// Supprimer pour moi, ou pour tous (24 heures, RG09.8)
+export async function supprimer(req, res) {
+  res.json(await messageService.supprimer(req.utilisateur.id, req.params.id, req.body.pourTous === true))
+}
+
 // Données personnelles : gardées par le navigateur, jamais par un cache partagé
 export async function fichier(req, res) {
   const f = await messageService.lireFichier(req.utilisateur.id, req.params.id)
