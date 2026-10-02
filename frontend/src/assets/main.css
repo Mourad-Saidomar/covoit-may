@@ -151,9 +151,25 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+/* Ordinateur : le hero occupe tout l'écran sous la barre de navigation
+   (76 px). Le contenu est centré en hauteur, le rivage reste collé en bas :
+   la section suivante commence juste sous le bord de l'écran. */
 @media (min-width: 992px) {
   .hero-section {
-    padding-top: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 76px);
+    min-height: calc(100svh - 76px);
+    padding-top: 2rem;
+  }
+  .hero-section > .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+  }
+  .hero-rivage {
+    flex-shrink: 0;
   }
 }
 @media (min-width: 1200px) {
@@ -1459,6 +1475,26 @@ a:hover {
   .navbar-cm #user-menu::after {
     display: none;
   }
+  /* Un lien ne se coupe jamais sur deux lignes */
+  .navbar-cm .nav-link {
+    white-space: nowrap;
+  }
+}
+/* Petit écran d'ordinateur, tablette à l'horizontale : liens plus compacts */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .navbar-cm .navbar-nav .nav-link {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    font-size: 0.9rem;
+  }
+  .navbar-cm .brand-logo {
+    margin-right: 0.5rem;
+  }
+  /* Les petites icônes devant les liens texte disparaissent (pas celles
+     des alertes et de la messagerie, qui n'ont pas de texte) */
+  .navbar-cm .me-auto .nav-link > .bi {
+    display: none;
+  }
 }
 
 /* ---------- Bouton « burger » : 3 traits qui deviennent une croix ---------- */
@@ -1885,13 +1921,15 @@ a:hover {
    L'avatar et le prénom mènent à « Mon profil ». Indices d'interaction :
    curseur « main », fond vert clair et avatar qui grossit au survol,
    infobulle « Mon profil » (attribut data-infobulle). */
+/* Le rôle (Passager, Conducteur…) est affiché sous l'avatar et le prénom */
 .navbar-profil {
   position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.2rem 0.75rem 0.2rem 0.2rem;
-  border-radius: 999px;
+  gap: 0.15rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.9rem;
   color: var(--cm-dark);
   font-weight: 600;
   text-decoration: none;
@@ -1902,6 +1940,16 @@ a:hover {
 }
 .navbar-profil .avatar {
   transition: transform 0.2s ease;
+}
+.navbar-profil-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.navbar-profil-role {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.62rem;
+  line-height: 1.4;
 }
 .navbar-profil:hover,
 .navbar-profil:focus-visible,
@@ -1917,8 +1965,17 @@ a:hover {
   outline: 3px solid rgba(45, 108, 88, 0.35);
   outline-offset: 2px;
 }
+/* Déconnexion : un bouton rond avec l'icône seule (nom donné par aria-label) */
 .btn-deconnexion {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.05rem;
   border: 1px solid rgba(201, 75, 58, 0.35);
   color: var(--cm-danger);
   background-color: #fff;
@@ -1954,6 +2011,17 @@ a:hover {
 [data-infobulle]:focus-visible::after {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+/* Bouton tout à droite : l'infobulle s'aligne sur son bord droit pour ne
+   pas sortir de l'écran */
+.btn-deconnexion[data-infobulle]::after {
+  left: auto;
+  right: 0;
+  transform: translateY(-4px);
+}
+.btn-deconnexion[data-infobulle]:hover::after,
+.btn-deconnexion[data-infobulle]:focus-visible::after {
+  transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .navbar-profil,

@@ -230,12 +230,7 @@ export default {
               </router-link>
             </li>
 
-            <!-- Ordinateur : statut, lien vers « Mon profil » (avatar + prénom) et déconnexion -->
-            <li class="nav-item me-lg-2 d-none d-lg-block">
-              <span class="user-status-badge" :class="classeStatutUtilisateur">
-                {{ statutUtilisateur }}
-              </span>
-            </li>
+            <!-- Ordinateur : « Mon profil » (avatar + prénom, rôle en dessous) et déconnexion (icône seule) -->
             <li class="nav-item d-none d-lg-block">
               <router-link
                 :to="{ name: 'my-profile' }"
@@ -243,14 +238,19 @@ export default {
                 data-infobulle="Mon profil"
                 aria-label="Mon profil"
               >
-                <AvatarMembre :personne="auth.utilisateur" taille="sm" />
-                <span class="navbar-profil-nom d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
+                <span class="navbar-profil-ligne">
+                  <AvatarMembre :personne="auth.utilisateur" taille="sm" />
+                  <span class="navbar-profil-nom d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
+                </span>
+                <span class="user-status-badge navbar-profil-role" :class="classeStatutUtilisateur">
+                  {{ statutUtilisateur }}
+                </span>
               </router-link>
             </li>
             <li class="nav-item d-none d-lg-block ms-lg-2">
-              <button type="button" class="btn btn-sm btn-deconnexion" data-infobulle="Se déconnecter"
+              <button type="button" class="btn btn-deconnexion" data-infobulle="Se déconnecter"
                 aria-label="Se déconnecter" @click="seDeconnecter">
-                <i class="bi bi-box-arrow-right"></i><span class="d-none d-xl-inline ms-1">Déconnexion</span>
+                <i class="bi bi-box-arrow-right"></i>
               </button>
             </li>
 
