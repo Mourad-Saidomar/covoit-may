@@ -116,6 +116,11 @@ export const useDataStore = defineStore('data', {
       return lire('/utilisateurs/' + id + '/profil')
     },
 
+    // Formulaire de contact : { nom, email, sujet, message, site }
+    envoyerContact(corps) {
+      return envoyer('/contact', corps)
+    },
+
     avisRecus(idUtilisateur) {
       return lire('/utilisateurs/' + idUtilisateur + '/avis')
     },

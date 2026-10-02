@@ -20,6 +20,15 @@ export const limiteurApi = rateLimit({
   message: { erreur: 'Trop de requêtes. Réessayez dans quelques minutes.' }
 })
 
+// Formulaire de contact : 5 messages par heure et par IP (anti-spam)
+export const limiteurContact = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { erreur: 'Vous avez envoyé beaucoup de messages. Réessayez dans une heure.' }
+})
+
 // Connexion et inscription : 10 essais par quart d'heure et par IP
 export const limiteurConnexion = rateLimit({
   windowMs: QUINZE_MINUTES,

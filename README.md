@@ -168,6 +168,7 @@ Valables en local et en ligne, sauf le mot de passe administrateur : `admin1234`
 | POST | `/api/messages/lus` (`{ avec }`) | membre |
 | PATCH, DELETE | `/api/messages/:id` (modifier sous 15 min ; supprimer `{ pourTous }`) | auteur (ou destinataire pour « pour moi ») |
 | POST | `/api/alertes/vues` | membre |
+| POST | `/api/contact` (`{ nom, email, sujet, message }`, 5 par heure et par IP) | public |
 | WebSocket | `/api/temps-reel` (premier message : `{ type: 'auth', jeton }`) | membre |
 
 Les routes protégées attendent l'en-tête `Authorization: Bearer <jeton>`, où le jeton est renvoyé par la connexion.

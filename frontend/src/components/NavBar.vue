@@ -238,12 +238,12 @@ export default {
                 data-infobulle="Mon profil"
                 aria-label="Mon profil"
               >
-                <span class="navbar-profil-ligne">
-                  <AvatarMembre :personne="auth.utilisateur" taille="sm" />
-                  <span class="navbar-profil-nom d-none d-xl-inline">{{ auth.utilisateur.prenom }}</span>
-                </span>
-                <span class="user-status-badge navbar-profil-role" :class="classeStatutUtilisateur">
-                  {{ statutUtilisateur }}
+                <AvatarMembre :personne="auth.utilisateur" taille="sm" />
+                <span class="navbar-profil-texte">
+                  <span class="navbar-profil-nom d-none d-xl-block">{{ auth.utilisateur.prenom }}</span>
+                  <span class="user-status-badge navbar-profil-role" :class="classeStatutUtilisateur">
+                    {{ statutUtilisateur }}
+                  </span>
                 </span>
               </router-link>
             </li>

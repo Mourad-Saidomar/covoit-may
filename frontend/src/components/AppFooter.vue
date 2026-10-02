@@ -30,6 +30,7 @@
             <li class="mb-2"><router-link class="text-white-50 text-decoration-none" :to="{ name: 'terms' }">Conditions générales (CGU)</router-link></li>
             <li class="mb-2"><router-link class="text-white-50 text-decoration-none" :to="{ name: 'privacy' }">Politique de confidentialité (RGPD)</router-link></li>
             <li class="mb-2"><router-link class="text-white-50 text-decoration-none" :to="{ name: 'legal' }">Cadre légal du covoiturage</router-link></li>
+            <li class="mb-2"><router-link class="text-white-50 text-decoration-none" :to="{ name: 'contact' }"><i class="bi bi-envelope me-1"></i>Nous contacter</router-link></li>
           </ul>
         </div>
         <div class="col-lg-3">

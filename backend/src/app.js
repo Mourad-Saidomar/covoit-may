@@ -34,6 +34,7 @@ import adminRoutes from './routes/admin.routes.js'
 import parametreRoutes from './routes/parametre.routes.js'
 import documentRoutes from './routes/document.routes.js'
 import notificationRoutes from './routes/notification.routes.js'
+import contactRoutes from './routes/contact.routes.js'
 import * as tempsReel from './tempsReel.js'
 import { MODE as MODE_EMAIL } from './services/emailService.js'
 import { purgerCodes } from './models/codeModel.js'
@@ -97,6 +98,7 @@ app.use('/api/favoris', favoriRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/contact', contactRoutes)
 
 // ---------- Fin de chaîne ----------
 app.use(notFound)

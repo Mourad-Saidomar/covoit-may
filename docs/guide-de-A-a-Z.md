@@ -308,6 +308,7 @@ Chaque fichier de `src/routes/` correspond à un **domaine** du site. Toutes les
 | `/alertes` | `alerte.routes.js` | Mes alertes, créer, activer ou mettre en pause, supprimer, marquer comme vues | Membre |
 | `/favoris` | `favori.routes.js` | Mes conducteurs favoris : lister, ajouter, retirer | Membre |
 | `/documents` | `document.routes.js` | PDF : reçu, relevé mensuel ; rapport d'activité, transactions, journal | Membre / admin |
+| `/contact` | `contact.routes.js` | Formulaire « Nous contacter » : le message part par e-mail à l'équipe | Public |
 | `/notifications` | `notification.routes.js` | Les deux compteurs des pastilles (messages non lus, nouveaux trajets) | Membre |
 | `/admin` | `admin.routes.js` | Tableau de bord, réglages, journal des actions | Admin |
 | `/temps-reel` | `tempsReel.js` | La connexion WebSocket (partie 4.8) | Membre |
@@ -354,6 +355,7 @@ Les services contiennent **la logique métier**. Ils appellent les modèles (SQL
 | `alerteService.js` | Alertes, compteur de nouveaux trajets, « marquer comme vues » |
 | `favoriService.js` | Ajouter ou retirer un conducteur favori |
 | `notificationService.js` | Calcule les deux compteurs des pastilles |
+| `contactService.js` | Envoie le message du formulaire de contact à l'équipe (non enregistré dans la base) ; ignore les robots pris au piège |
 | `adminService.js` | Tableau de bord, réglages, journal |
 | `communeService.js` | Liste des communes |
 | `documentService.js` + `pdf/gabaritPdf.js` | Fabrique les 5 PDF (partie 4.7) |
@@ -467,6 +469,7 @@ Ce sont les **réglages et les secrets**, qui changent entre ton PC et le serveu
 | `LIMITE_CONNEXIONS`, `LIMITE_REQUETES` | Pour changer les limites par IP (facultatif) |
 | `B2_S3_ENDPOINT`, `B2_BUCKET_MEDIAS`, `B2_KEY_ID`, `B2_APPLICATION_KEY` | Accès au bucket Backblaze des médias |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | Le serveur d'e-mails qui envoie les codes |
+| `CONTACT_EMAIL` | L'adresse qui reçoit les messages du formulaire de contact (vide : `SMTP_USER`) |
 
 ### 4.13 Les scripts de test du back-end
 
@@ -586,6 +589,7 @@ Attention : c'est un **confort** pour l'utilisateur. La vraie sécurité est dan
 | Mes alertes (`/mes-alertes`) | `MyAlertsView.vue` | Membres |
 | Mon profil (`/mon-profil`) | `MyProfileView.vue` | Tous les connectés |
 | Administration (`/admin/…`) : tableau de bord, utilisateurs, modération, litiges, transactions, documents | `admin/Admin….vue` (dans `AdminLayout.vue`) | Admin |
+| Nous contacter (`/contact`) | `ContactView.vue` | Tous |
 | Accès refusé, page introuvable | `ForbiddenView.vue`, `NotFoundView.vue` | Tous |
 
 ### 5.7 Les fonctions du navigateur utilisées (API Web)
@@ -697,6 +701,12 @@ Pour chaque fonctionnalité : **la page**, **l'adresse de l'API** et **ce qui pr
 | Fonctionnalité | Page | API | Ce qui se passe |
 |---|---|---|---|
 | Traiter un litige | `admin/AdminDisputes` | `/litiges/:id/prendre-en-charge`, `/resoudre` | Décision, explication, remboursement éventuel |
+
+### Contact
+
+| Fonctionnalité | Page | API | Ce qui se passe |
+|---|---|---|---|
+| Écrire à l'équipe | `ContactView` (lien dans le pied de page) | `POST /contact` | Nom, e-mail (pré-remplis si on est connecté), sujet, message (10 à 2 000 caractères). Le message part par e-mail à `CONTACT_EMAIL` ; « Répondre » écrit directement à la personne. 5 messages par heure et par IP. Un champ caché (**honeypot**) piège les robots. Aucun accusé n'est envoyé au visiteur, pour qu'on ne puisse pas utiliser le site pour envoyer des e-mails à n'importe qui. |
 
 ### F8 : Administration
 
@@ -978,6 +988,7 @@ Il vaut mieux les connaître et les dire au jury que de les découvrir pendant l
 | **Procédure stockée** | Un petit programme enregistré dans la base |
 | **Migration** | Un script qui fait évoluer la structure d'une base existante sans perdre ses données |
 | **WebSocket** | Une connexion qui reste ouverte entre le site et le serveur : le serveur peut envoyer une information sans qu'on la lui demande (temps réel) |
+| **Honeypot (pot de miel)** | Un champ de formulaire caché aux humains : seul un robot le remplit, ce qui permet d'ignorer son message |
 | **Polling (interrogation régulière)** | Redemander au serveur toutes les X secondes s'il y a du nouveau (solution de secours si le WebSocket est coupé) |
 | **SMTP** | Le protocole utilisé pour envoyer des e-mails |
 | **STARTTLS** | Une connexion qui démarre en clair puis passe en chiffré (port 587) |

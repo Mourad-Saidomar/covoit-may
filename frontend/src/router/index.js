@@ -41,6 +41,7 @@ import AdminTransactions from '../views/admin/AdminTransactions.vue'
 import AdminDocuments from '../views/admin/AdminDocuments.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
 import InfoView from '../views/InfoView.vue'
+import ContactView from '../views/ContactView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
 // ============================================================
@@ -120,6 +121,12 @@ const routes = [
     name: 'legal',
     component: InfoView,
     meta: { titre: 'Cadre légal du covoiturage', page: 'cadre-legal' }
+  },
+  {
+    path: '/contact',
+    name: 'contact',
+    component: ContactView,
+    meta: { titre: 'Nous contacter' }
   },
 
   // ----- Connexion / inscription -----

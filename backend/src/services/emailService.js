@@ -70,6 +70,31 @@ export async function envoyerCode({ email, prenom, code, objet, minutes }) {
   })
 }
 
+// Message du formulaire de contact, envoyé à l'équipe (CONTACT_EMAIL,
+// sinon l'adresse SMTP_USER). « Répondre » dans la messagerie écrit
+// directement à la personne (replyTo).
+// Volontairement en texte brut : le contenu tapé par un visiteur n'est
+// jamais interprété comme du HTML. Et aucun accusé de réception n'est
+// envoyé au visiteur : sinon n'importe qui pourrait faire envoyer des
+// emails par Covoit'May à l'adresse de son choix.
+export async function envoyerMessageContact({ nom, email, sujet, message, idUtilisateur }) {
+  const texte = `Nouveau message depuis le formulaire de contact\n\n` +
+    `De : ${nom} <${email}>\n` +
+    `Compte : ${idUtilisateur ? 'membre n° ' + idUtilisateur : 'visiteur (non connecté)'}\n` +
+    `Sujet : ${sujet}\n\n${message}\n`
+  if (!transport) {
+    console.log(`\n[email non envoyé : SMTP non configuré] Formulaire de contact\n${texte}`)
+    return
+  }
+  await transport.sendMail({
+    from: EXPEDITEUR,
+    to: process.env.CONTACT_EMAIL || SMTP_USER,
+    replyTo: { name: nom, address: email },
+    subject: `[Contact] ${sujet} · ${nom}`,
+    text: texte
+  })
+}
+
 // Vérifie la connexion au serveur SMTP (script de test)
 export async function verifierConnexion() {
   if (!transport) return false
